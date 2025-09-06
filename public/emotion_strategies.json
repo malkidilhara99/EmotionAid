@@ -1,0 +1,545 @@
+{
+  "Angry": [
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Temporary",
+      "Strategy": "Deep Breathing",
+      "Description": "Take deep breaths in a 4-7-8 pattern to calm down.",
+      "Reference": "Gross, J. J. (1998). The emerging field of emotion regulation. Review of General Psychology."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Permanent",
+      "Strategy": "Cognitive Reappraisal",
+      "Description": "Reframe the situation to reduce emotional response.",
+      "Reference": "Gross, J. J., & John, O. P. (2003). Individual differences in two emotion regulation processes."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Temporary",
+      "Strategy": "Deep Breathing",
+      "Description": "Use 4-7-8 breathing to calm down.",
+      "Reference": "Gross, J. J. (1998). The emerging field of emotion regulation."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Temporary",
+      "Strategy": "Taking a Break",
+      "Description": "Physically remove yourself from the trigger.",
+      "Reference": "Deffenbacher, J. L. (1999). Cognitive-behavioral conceptualization of anger."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Permanent",
+      "Strategy": "Anger Management Therapy",
+      "Description": "Structured therapy to manage chronic anger.",
+      "Reference": "Novaco, R. W. (1975). Anger control: The development and evaluation of an experimental treatment."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Permanent",
+      "Strategy": "Cognitive Reappraisal",
+      "Description": "Reframe the anger-inducing situation.",
+      "Reference": "Gross, J. J., & John, O. P. (2003). Journal of Personality and Social Psychology."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Temporary",
+      "Strategy": "Progressive Muscle Relaxation",
+      "Description": "Systematically relax muscle groups.",
+      "Reference": "Jacobson, E. (1938). Progressive relaxation."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Permanent",
+      "Strategy": "Self-Distancing",
+      "Description": "View the situation from a third-person perspective to reduce emotional reactivity.",
+      "Reference": "Kross, E., & Ayduk, \u00d6. (2011). Making meaning out of negative experiences by self-distancing. Current Directions in Psychological Science, 20(3), 187\u2013191."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Temporary",
+      "Strategy": "Time-Out",
+      "Description": "Step away from the anger-inducing situation to cool down and prevent escalation.",
+      "Reference": "Deffenbacher, J. L., et al. (1996). A cognitive-behavioral approach to reducing anger. Journal of Counseling Psychology, 43(2), 149\u2013157."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Permanent",
+      "Strategy": "Nonviolent Communication",
+      "Description": "Use empathetic, need-based dialogue to resolve conflicts constructively.",
+      "Reference": "Rosenberg, M. B. (2003). Nonviolent Communication: A Language of Life."
+    },
+    {
+      "Emotion": "Angry",
+      "StrategyType": "Permanent",
+      "Strategy": "Channeling Anger into Activism",
+      "Description": "Convert frustration into constructive action to promote change.",
+      "Reference": "Thomas, E. F., et al. (2009). How collective action produces psychological change and how that change endures over time."
+    }
+  ],
+  "Anxious": [
+    {
+      "Emotion": "Anxious",
+      "StrategyType": "Permanent",
+      "Strategy": "Mindfulness Meditation",
+      "Description": "Practice present-moment awareness through guided or unguided mindfulness sessions.",
+      "Reference": "Kabat-Zinn, J. (1994). Wherever You Go, There You Are. Hyperion."
+    },
+    {
+      "Emotion": "Anxious",
+      "StrategyType": "Temporary",
+      "Strategy": "Progressive Muscle Relaxation",
+      "Description": "Systematically tense and relax muscle groups to reduce physical tension.",
+      "Reference": "Jacobson, E. (1938). Progressive Relaxation. University of Chicago Press."
+    },
+    {
+      "Emotion": "Anxious",
+      "StrategyType": "Permanent",
+      "Strategy": "Cognitive Defusion",
+      "Description": "Learn to detach from anxious thoughts by observing them as mental events rather than facts.",
+      "Reference": "Hayes, S. C., et al. (1999). Acceptance and Commitment Therapy. Guilford Press."
+    },
+    {
+      "Emotion": "Anxious",
+      "StrategyType": "Permanent",
+      "Strategy": "Acceptance and Commitment Therapy",
+      "Description": "Learn to accept chronic conditions while committing to meaningful goals.",
+      "Reference": "Hayes, S. C., et al. (1999). Acceptance and Commitment Therapy. Guilford Press."
+    },
+    {
+      "Emotion": "Anxious",
+      "StrategyType": "Temporary",
+      "Strategy": "Reality Testing",
+      "Description": "Ask objective questions to evaluate the real impact of the surprise.",
+      "Reference": "Beck, J. S. (2011). Cognitive Behavior Therapy: Basics and Beyond."
+    }
+  ],
+  "Disappointed": [
+    {
+      "Emotion": "Disappointed",
+      "StrategyType": "Temporary",
+      "Strategy": "Self-Compassion",
+      "Description": "Treat yourself with the same kindness you'd offer a friend in failure.",
+      "Reference": "Neff, K. D. (2003). Self-compassion: An alternative conceptualization of a healthy attitude toward oneself."
+    }
+  ],
+  "Disgust": [
+    {
+      "Emotion": "Disgust",
+      "StrategyType": "Permanent",
+      "Strategy": "Exposure Therapy",
+      "Description": "Repeated exposure to aversive stimuli reduces disgust response.",
+      "Reference": "Rozin, P., Haidt, J., & McCauley, C. R. (2008). Disgust."
+    },
+    {
+      "Emotion": "Disgust",
+      "StrategyType": "Temporary",
+      "Strategy": "Mindful Acceptance",
+      "Description": "Observe and accept the feeling without judgment.",
+      "Reference": "Kabat-Zinn, J. (1990). Full catastrophe living."
+    },
+    {
+      "Emotion": "Disgust",
+      "StrategyType": "Temporary",
+      "Strategy": "Breathing through Mouth",
+      "Description": "Lessens olfactory triggers of disgust.",
+      "Reference": "Rozin, P., et al. (2008). Disgust."
+    },
+    {
+      "Emotion": "Disgust",
+      "StrategyType": "Permanent",
+      "Strategy": "Habituation",
+      "Description": "Repeated exposure reduces disgust over time.",
+      "Reference": "Olatunji, B. O., et al. (2007). Journal of Anxiety Disorders."
+    },
+    {
+      "Emotion": "Disgust",
+      "StrategyType": "Temporary",
+      "Strategy": "Cognitive Labeling",
+      "Description": "Reframe the emotion as curiosity or interest.",
+      "Reference": "Kreibig, S. D. (2010). Autonomic nervous system activity in emotion."
+    },
+    {
+      "Emotion": "Disgust",
+      "StrategyType": "Permanent",
+      "Strategy": "Mindfulness Practice",
+      "Description": "Nonjudgmental awareness of emotional responses.",
+      "Reference": "Kabat-Zinn, J. (1990). Full catastrophe living."
+    },
+    {
+      "Emotion": "Disgust",
+      "StrategyType": "Permanent",
+      "Strategy": "Acceptance-Based Therapy",
+      "Description": "Accept discomfort without acting on it.",
+      "Reference": "Hayes, S. C., et al. (1999). Acceptance and commitment therapy."
+    }
+  ],
+  "Fear": [
+    {
+      "Emotion": "Fear",
+      "StrategyType": "Permanent",
+      "Strategy": "Exposure Therapy",
+      "Description": "Gradual exposure to feared object or context reduces fear.",
+      "Reference": "Foa, E. B., Hembree, E. A., & Rothbaum, B. O. (2007). Prolonged exposure therapy for PTSD."
+    },
+    {
+      "Emotion": "Fear",
+      "StrategyType": "Temporary",
+      "Strategy": "Grounding Techniques",
+      "Description": "Use 5-4-3-2-1 method to stay present and reduce anxiety.",
+      "Reference": "Najmi, S., Riemann, B. C., & Wegner, D. M. (2010). Managing unwanted intrusive thoughts."
+    },
+    {
+      "Emotion": "Fear",
+      "StrategyType": "Temporary",
+      "Strategy": "Grounding",
+      "Description": "Use sensory grounding to anchor to the present.",
+      "Reference": "Najmi, S., et al. (2010). Managing unwanted intrusive thoughts."
+    },
+    {
+      "Emotion": "Fear",
+      "StrategyType": "Temporary",
+      "Strategy": "Box Breathing",
+      "Description": "Inhale-hold-exhale-hold each for 4 counts.",
+      "Reference": "Russell, L. (2016). Mindfulness for Beginners."
+    },
+    {
+      "Emotion": "Fear",
+      "StrategyType": "Permanent",
+      "Strategy": "Exposure Therapy",
+      "Description": "Gradually expose yourself to the fear source.",
+      "Reference": "Foa, E. B., et al. (2007). Prolonged exposure therapy."
+    },
+    {
+      "Emotion": "Fear",
+      "StrategyType": "Permanent",
+      "Strategy": "Systematic Desensitization",
+      "Description": "Pair relaxation with gradual fear exposure.",
+      "Reference": "Wolpe, J. (1958). Psychotherapy by reciprocal inhibition."
+    },
+    {
+      "Emotion": "Fear",
+      "StrategyType": "Temporary",
+      "Strategy": "Visualization",
+      "Description": "Imagine a calming or safe place.",
+      "Reference": "Holmes, E. A., & Mathews, A. (2005). Journal of Abnormal Psychology."
+    }
+  ],
+  "Fearful": [
+    {
+      "Emotion": "Fearful",
+      "StrategyType": "Permanent",
+      "Strategy": "Exposure Therapy",
+      "Description": "Gradually confront the feared situation to reduce avoidance and build tolerance.",
+      "Reference": "Foa, E. B., & Kozak, M. J. (1986). Emotional processing of fear. Psychological Bulletin, 99(1), 20\u201335."
+    },
+    {
+      "Emotion": "Fearful",
+      "StrategyType": "Temporary",
+      "Strategy": "Safety Planning",
+      "Description": "Create a step-by-step action plan to respond safely to the perceived threat.",
+      "Reference": "Bryan, C. J., & Rudd, M. D. (2018). Brief Cognitive Behavioral Therapy for Suicide Prevention. Guilford Publications."
+    },
+    {
+      "Emotion": "Fearful",
+      "StrategyType": "Temporary",
+      "Strategy": "Cognitive Flexibility",
+      "Description": "Reframe change as an opportunity for growth rather than threat.",
+      "Reference": "Martin, M. M., & Rubin, R. B. (1995). A new measure of cognitive flexibility."
+    }
+  ],
+  "Grief": [
+    {
+      "Emotion": "Grief",
+      "StrategyType": "Permanent",
+      "Strategy": "Grief Counseling",
+      "Description": "Engage in guided counseling to work through stages of grief.",
+      "Reference": "Worden, J. W. (2008). Grief counseling and grief therapy (4th ed.)."
+    }
+  ],
+  "Happy": [
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Express Gratitude",
+      "Description": "Write down three things you are grateful for daily.",
+      "Reference": "Emmons, R. A., & McCullough, M. E. (2003). Counting blessings versus burdens. Journal of Personality and Social Psychology, 84(2), 377\u2013389."
+    },
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Savoring",
+      "Description": "Consciously focus on positive experiences to prolong their effects.",
+      "Reference": "Bryant, F. B., & Veroff, J. (2007). Savoring: A new model of positive experience."
+    },
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Gratitude Journaling",
+      "Description": "Write daily about things you're thankful for.",
+      "Reference": "Emmons, R. A., & McCullough, M. E. (2003). Counting blessings versus burdens. Journal of Personality and Social Psychology, 84(2), 377\u2013389."
+    },
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Savoring",
+      "Description": "Pause and fully enjoy positive experiences.",
+      "Reference": "Bryant, F. B., & Veroff, J. (2007). Savoring: A new model of positive experience."
+    },
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Acts of Kindness",
+      "Description": "Engage in small acts of kindness to boost happiness.",
+      "Reference": "Lyubomirsky, S., Sheldon, K. M., & Schkade, D. (2005). Pursuing happiness. Review of General Psychology."
+    },
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Mindfulness Meditation",
+      "Description": "Practice present-moment awareness.",
+      "Reference": "Kabat-Zinn, J. (1994). Wherever you go, there you are."
+    },
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Positive Self-Talk",
+      "Description": "Use encouraging statements for yourself.",
+      "Reference": "Burns, D. D. (1980). Feeling good: The new mood therapy."
+    },
+    {
+      "Emotion": "Happy",
+      "StrategyType": "Maintain",
+      "Strategy": "Acts of Kindness",
+      "Description": "Perform altruistic acts to sustain elevated mood and life satisfaction.",
+      "Reference": "Lyubomirsky, S., Sheldon, K. M., & Schkade, D. (2005). Pursuing happiness. Review of General Psychology, 9(2), 111\u2013131."
+    }
+  ],
+  "Hopeless": [
+    {
+      "Emotion": "Hopeless",
+      "StrategyType": "Permanent",
+      "Strategy": "Goal Setting and Planning",
+      "Description": "Set realistic goals and break them into action steps to regain control.",
+      "Reference": "Locke, E. A., & Latham, G. P. (2002). Building a practically useful theory of goal setting and task motivation."
+    }
+  ],
+  "Hurt": [
+    {
+      "Emotion": "Hurt",
+      "StrategyType": "Temporary",
+      "Strategy": "Cognitive Reappraisal",
+      "Description": "Reframe criticism as feedback for growth rather than a personal attack.",
+      "Reference": "Gross, J. J. (1998). The emerging field of emotion regulation."
+    }
+  ],
+  "Lonely": [
+    {
+      "Emotion": "Lonely",
+      "StrategyType": "Permanent",
+      "Strategy": "Building Social Connections",
+      "Description": "Join community or interest groups to foster meaningful social interactions.",
+      "Reference": "Hawkley, L. C., & Cacioppo, J. T. (2010). Loneliness matters: A theoretical and empirical review."
+    }
+  ],
+  "Neutral": [
+    {
+      "Emotion": "Neutral",
+      "StrategyType": "Maintain",
+      "Strategy": "Mindfulness",
+      "Description": "Stay in the present moment with non-judgmental awareness.",
+      "Reference": "Kabat-Zinn, J. (1994). Wherever you go, there you are."
+    },
+    {
+      "Emotion": "Neutral",
+      "StrategyType": "Maintain",
+      "Strategy": "Routine Building",
+      "Description": "Develop stable routines to maintain emotional balance.",
+      "Reference": "Baumeister, R. F., & Vohs, K. D. (2003). Self-regulation and the executive function of the self."
+    },
+    {
+      "Emotion": "Neutral",
+      "StrategyType": "Maintain",
+      "Strategy": "Mindfulness",
+      "Description": "Stay present and observe without judgment.",
+      "Reference": "Kabat-Zinn, J. (1994). Wherever you go, there you are."
+    },
+    {
+      "Emotion": "Neutral",
+      "StrategyType": "Maintain",
+      "Strategy": "Routine Maintenance",
+      "Description": "Keep a balanced daily routine.",
+      "Reference": "Baumeister, R. F., & Vohs, K. D. (2003). Self-regulation."
+    },
+    {
+      "Emotion": "Neutral",
+      "StrategyType": "Maintain",
+      "Strategy": "Balanced Diet",
+      "Description": "Stabilize mood through nutrition.",
+      "Reference": "Jacka, F. N., et al. (2010). Diet and depression. The American Journal of Psychiatry."
+    },
+    {
+      "Emotion": "Neutral",
+      "StrategyType": "Maintain",
+      "Strategy": "Exercise Regularly",
+      "Description": "Improve mood and balance through movement.",
+      "Reference": "Ratey, J. J. (2008). Spark: The revolutionary new science of exercise and the brain."
+    },
+    {
+      "Emotion": "Neutral",
+      "StrategyType": "Maintain",
+      "Strategy": "Sleep Hygiene",
+      "Description": "Establish consistent sleep habits.",
+      "Reference": "Walker, M. (2017). Why we sleep."
+    }
+  ],
+  "Proud": [
+    {
+      "Emotion": "Proud",
+      "StrategyType": "Maintain",
+      "Strategy": "Reflective Journaling",
+      "Description": "Record what you learned and how you succeeded to reinforce motivation.",
+      "Reference": "King, L. A. (2001). The health benefits of writing about life goals."
+    }
+  ],
+  "Sad": [
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Permanent",
+      "Strategy": "Cognitive Restructuring",
+      "Description": "Challenge and replace negative thoughts with balanced ones.",
+      "Reference": "Beck, J. S. (2011). Cognitive behavior therapy: Basics and beyond."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Temporary",
+      "Strategy": "Social Support",
+      "Description": "Talk to a friend or loved one for emotional support.",
+      "Reference": "Cohen, S., & Wills, T. A. (1985). Stress, social support, and the buffering hypothesis. Psychological Bulletin."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Temporary",
+      "Strategy": "Crying",
+      "Description": "Allow yourself to cry to process sadness.",
+      "Reference": "Vingerhoets, A. J. (2013). Why only humans weep."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Temporary",
+      "Strategy": "Talking to a Friend",
+      "Description": "Share feelings with a trusted person.",
+      "Reference": "Cohen, S., & Wills, T. A. (1985). Psychological Bulletin."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Permanent",
+      "Strategy": "CBT",
+      "Description": "Use CBT to reframe negative thoughts.",
+      "Reference": "Beck, J. S. (2011). Cognitive behavior therapy: Basics and beyond."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Permanent",
+      "Strategy": "Behavioral Activation",
+      "Description": "Engage in activities even if not motivated.",
+      "Reference": "Jacobson, N. S., et al. (1996). Behavioral activation treatment for depression."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Temporary",
+      "Strategy": "Music Listening",
+      "Description": "Listen to mood-boosting music.",
+      "Reference": "Thayer, R. E., et al. (1994). Mood and music. Journal of Music Therapy."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Temporary",
+      "Strategy": "Positive Distraction",
+      "Description": "Engage in an enjoyable activity to momentarily divert attention from sadness.",
+      "Reference": "Nolen-Hoeksema, S. (1991). Responses to depression and their effects on the duration of depressive episodes. Journal of Abnormal Psychology, 100(4), 569\u2013582."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Permanent",
+      "Strategy": "Behavioral Activation",
+      "Description": "Schedule and engage in meaningful or pleasurable activities to counteract inertia.",
+      "Reference": "Martell, C. R., et al. (2001). Behavioral activation treatment for depression. Clinical Psychology: Science and Practice, 8(3), 255\u2013270."
+    },
+    {
+      "Emotion": "Sad",
+      "StrategyType": "Permanent",
+      "Strategy": "Expressive Writing",
+      "Description": "Write about your thoughts and feelings to process the breakup.",
+      "Reference": "Pennebaker, J. W. (1997). Opening up: The healing power of expressing emotions."
+    }
+  ],
+  "Stressed": [
+    {
+      "Emotion": "Stressed",
+      "StrategyType": "Permanent",
+      "Strategy": "Problem-Solving Therapy",
+      "Description": "Use structured steps to identify issues and generate coping solutions.",
+      "Reference": "Nezu, A. M., et al. (2001). Problem-solving therapy: A positive approach to clinical intervention."
+    },
+    {
+      "Emotion": "Stressed",
+      "StrategyType": "Temporary",
+      "Strategy": "Time Management Skills",
+      "Description": "Apply prioritization, delegation, and planning to reduce overwhelm.",
+      "Reference": "Claessens, B. J., et al. (2007). A review of the time management literature."
+    }
+  ],
+  "Surprise": [
+    {
+      "Emotion": "Surprise",
+      "StrategyType": "Temporary",
+      "Strategy": "Orienting Response",
+      "Description": "Pause and assess the situation before reacting.",
+      "Reference": "Sokolov, E. N. (1963). Perception and the conditioned reflex."
+    },
+    {
+      "Emotion": "Surprise",
+      "StrategyType": "Permanent",
+      "Strategy": "Adaptive Preparedness",
+      "Description": "Learn to expect and reframe unexpected events positively.",
+      "Reference": "Lazarus, R. S., & Folkman, S. (1984). Stress, appraisal, and coping."
+    },
+    {
+      "Emotion": "Surprise",
+      "StrategyType": "Temporary",
+      "Strategy": "Orienting Response",
+      "Description": "Pause and assess the unexpected stimulus.",
+      "Reference": "Sokolov, E. N. (1963). Perception and the conditioned reflex."
+    },
+    {
+      "Emotion": "Surprise",
+      "StrategyType": "Permanent",
+      "Strategy": "Flexibility Training",
+      "Description": "Improve adaptability to unexpected events.",
+      "Reference": "Kashdan, T. B., & Rottenberg, J. (2010). Psychological flexibility."
+    },
+    {
+      "Emotion": "Surprise",
+      "StrategyType": "Permanent",
+      "Strategy": "Stress Inoculation",
+      "Description": "Prepare mentally for unpredictability.",
+      "Reference": "Meichenbaum, D. (2007). Stress inoculation training."
+    },
+    {
+      "Emotion": "Surprise",
+      "StrategyType": "Temporary",
+      "Strategy": "Cognitive Reappraisal",
+      "Description": "Reframe unexpected events as opportunities.",
+      "Reference": "Gross, J. J., & John, O. P. (2003)."
+    },
+    {
+      "Emotion": "Surprise",
+      "StrategyType": "Permanent",
+      "Strategy": "Emotional Preparedness",
+      "Description": "Anticipate and mentally rehearse surprise outcomes.",
+      "Reference": "Lazarus, R. S., & Folkman, S. (1984). Stress, appraisal, and coping."
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[project]
+name = "solution_recommandation"
+version = "0.1.0"
+description = "solution_Recommandation using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]>=0.141.0,<1.0.0"
+]
+
+[project.scripts]
+solution_recommandation = "solution_recommandation.main:run"
+run_crew = "solution_recommandation.main:run"
+train = "solution_recommandation.main:train"
+replay = "solution_recommandation.main:replay"
+test = "solution_recommandation.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"

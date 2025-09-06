@@ -1,0 +1,134 @@
+emotion_intake_task:
+  description: >
+    Start by confirming the emotion "{emotion}" detected by the system this year ({current_year}).
+    Use reliable methods to check:
+    - If this emotion is correct
+    - How strong the emotion is (on a scale from 1 to 10)
+    - If the person might need urgent support
+    - Anything cultural or personal that might affect how they show emotions
+
+    Be gentle, respectful, and focused on helping.
+  expected_output: >
+    - Confirmed emotion with confidence level
+    - A simple severity score (1–10)
+    - Any urgent safety concerns (yes/no)
+    - Notes on cultural or personal factors
+  agent: emotion_intake_agent
+  guardrail: safety_and_ethics_check
+  human_input: false
+  verbose: true
+
+contextual_analysis_task:
+  description: >
+    Understand what might be causing "{emotion}" based on the reason: "{reason}".
+    Use psychological and social knowledge to explain:
+    - Why this might feel so strong or significant (e.g., validation, loss, transition, aspiration).
+    - What patterns it fits into (e.g., achievement, grief, stress, personal growth).
+    - What might make it harder or easier to handle or *leverage* for future well-being.
+    - **Crucially, derive 3-5 specific, actionable "solution themes" or "focus areas" directly from the reason that future steps should prioritize. For an academic achievement, these might be "continued intellectual growth," "career advancement," "savoring recognition," or "sharing success." For a negative emotion, it might be "coping with loss," "stress reduction," or "conflict resolution."**
+  expected_output: >
+    - Easy-to-understand explanation of how the emotion and reason are connected.
+    - Personal, social, or cultural factors that affect the feeling.
+    - Helpful insights about what might support healing (for negative) or amplifying/savoring/leveraging the feeling (for positive).
+    - **A prioritized list of 3-5 "Solution Themes" (e.g., "Theme: Career Advancement," "Theme: Savoring Personal Milestone") that directly stem from the reason and emotion. These themes must be specific enough to guide research and personalized interventions.**
+  agent: contextual_analysis_researcher
+  context: [emotion_intake_task]
+  reasoning: true
+  max_reasoning_attempts: 3
+  memory: true
+  verbose: true
+
+evidence_validation_task:
+  description: >
+    Look for solid, science-backed ways to help with "{emotion}" (or enhance if positive) using:
+    - Trusted studies and reviews (from 2020–{current_year}).
+    - Known treatment databases like APA Division 12 and Cochrane Reviews (for challenges).
+    - Positive psychology research (for positive emotions, e.g., savoring, flow, gratitude, achievement-savoring, post-traumatic growth, goal attainment).
+    - **Crucially, filter and prioritize research findings that directly align with the "Solution Themes" identified in the contextual analysis. For example, if a theme is "Career Advancement," find studies on goal setting for career success or professional development.**
+
+    Find only those ideas that work well and are safe, and specifically relevant to the *reason* and derived themes.
+  expected_output: >
+    - A short list of the best solutions/enhancement strategies (5–7) that are backed by research, and **explicitly linked to the identified "Solution Themes."**
+    - What each solution/strategy is good for and any risks to know.
+    - If they’ve been used for people with different backgrounds.
+    - Where the information came from (journal or study).
+  agent: evidence_based_strategy_analyzer
+  context: [emotion_intake_task, contextual_analysis_task]
+  reasoning: true
+  max_reasoning_attempts: 3
+  verbose: true
+
+personalized_intervention_task:
+  description: >
+    Create a simple, clear plan for helping someone with "{emotion}" using the best suggestions.
+    Make sure:
+    - The steps are doable in daily life.
+    - The advice is culturally respectful and easy to follow.
+    - The person gets a mix of quick ideas (today) and lasting ones (over weeks).
+    - **The suggestions are *hyper-tailored* to the reason "{reason}" and its specific context and implications, directly addressing the "Solution Themes" identified.**
+    - For positive emotions and achievements, include suggestions for savoring, celebrating, and leveraging the success *in ways that directly relate to the achievement (e.g., for a degree: exploring PhDs, networking in the field, specific celebrations of academic success)*.
+  expected_output: >
+    - 2 or 3 things to try right away that are **highly relevant to the "Solution Themes" and the reason.** (e.g., "plan a small celebration for your academic achievement," "write down 3 specific skills you gained from your degree").
+    - 3 or 4 things to work on in the coming weeks that are **highly relevant to the "Solution Themes" and the reason.** (e.g., "research PhD programs in your field," "join professional associations enabled by your degree," "schedule a meeting with a mentor to discuss career paths").
+    - Clear, practical examples for each step.
+    - Notes for accessibility and when to ask a real therapist.
+  agent: personalized_solution_generator
+  context: [emotion_intake_task, contextual_analysis_task, evidence_validation_task]
+  allow_code_execution: false
+  verbose: true
+
+trauma_informed_presentation_task:
+  description: >
+    Share the support plan gently and kindly. Say:
+    - What can help, and why.
+    - That it’s okay to feel this way (for negative emotions) or **how remarkable it is to feel this way given the significant achievement (for positive emotions), explicitly connecting to the reason.**
+    - Ask if the person wants to share what’s causing the emotion.
+    - Remind them they’re in control of the next step.
+  expected_output: >
+    If the emotion "{emotion}" is positive (e.g., {emotion_valence}), your role is to warmly celebrate the user's experience,
+    reflect the significance of their achievement or joy, and guide them to savor and integrate the positive feeling into their life **in ways that acknowledge the specific nature of the success.**
+    For negative emotions, provide compassionate support and guidance.
+    - A simple message offering care and support.
+    - Clear explanation of ideas (not too technical), **linking them explicitly back to the reason.**
+    - Invitation to share what's on their mind (optional).
+    - Reassurance about privacy and safety.
+  agent: trauma_informed_presenter
+  context: [personalized_intervention_task]
+  human_input: true
+  verbose: true
+
+research_validation_review_task:
+  description: >
+    Double-check that the advice given earlier is:
+    - Safe.
+    - Scientifically sound (considering positive psychology for positive emotions, and its **direct relevance to the specific reason and the "Solution Themes"**).
+    - A good match for the user’s situation and the reason "{reason}".
+  expected_output: >
+    - A short report confirming the support plan is solid.
+    - Any warnings or things that need better evidence.
+    - A final approval or fix-it list.
+  agent: research_validation_agent
+  context: [personalized_intervention_task, contextual_analysis_task]
+  reasoning: true
+  max_reasoning_attempts: 2
+  verbose: true
+
+final_delivery_task:
+  description: >
+    Wrap up by kindly presenting the full plan.
+    Make sure:
+    - It’s clear and easy to follow.
+    - It encourages the user and gives hope.
+    - It tells them when they should get real-life help.
+  expected_output: >
+    - A final message that gives warmth and guidance.
+    - Easy breakdown of immediate and long-term support steps, **explicitly connecting them to the reason and how they fulfill the "Solution Themes".**
+    - Avoid technical words unless explained (e.g., CBT = changing negative thoughts).
+    - Reminder of boundaries and when to get professional help.
+    - Ending that cheers the person on and gives them hope.
+  agent: final_presenter_agent
+  context: [research_validation_review_task]
+  output_file: output/final_emotional_support_plan.md
+  multimodal: true
+  human_input: false
+  verbose: true

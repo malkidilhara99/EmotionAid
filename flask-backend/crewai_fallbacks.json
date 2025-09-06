@@ -1,0 +1,24 @@
+{
+ "Sad": [
+    "Hey {name},\n\n1. I know your heart hurts right now, and that’s okay. Breakups are tough, but feeling this pain doesn’t mean you won’t be happy again — healing takes time, and you will get there.\n\n2. Allow yourself to feel: cry, journal, or talk to someone who really listens. Letting it out is part of the process and helps you release the heaviness.\n\n3. Take care of your body: eat nourishing meals, drink water, and try to get enough sleep. Even a short walk outside or stretching can help your mind feel calmer.\n\n4. Give yourself space from your ex: for now, avoid texting, calling, or checking their social media. This is not about punishment — it’s about protecting your heart and letting yourself heal.\n\n5. Reconnect with support: spend time with friends or family who make you feel loved and safe. Small moments of connection remind you that you’re not alone.\n\n6. Focus on small wins: set tiny goals like reading a chapter of a book, cooking a meal, or learning something new. Each step rebuilds your confidence bit by bit.\n\n7. Practice self-kindness: be gentle with yourself. It’s okay to feel sad and also okay to smile at something that makes you happy — both can exist at the same time.\n\n8. If you want, I can help you create a short, simple plan for the next 24 hours or suggest small, doable activities that can lift your mood right now. Just tell me when you’re ready."
+],
+
+  "Angry": [
+    "Count to 10 slowly and breathe deeply before responding.",
+    "Do 2 minutes of physical movement to release tension.",
+    "Write down what triggered you and one small action to address it."
+  ],
+  "Fearful": [
+    "Name three things you can control right now.",
+    "Practice box breathing for 2 minutes (4-4-4-4).",
+    "Reach out to someone you trust and tell them one specific worry."
+  ],
+  "Happy": [
+    "Celebrate the moment—share it with someone or journal it.",
+    "Sustain it: plan one small activity that keeps the momentum going."
+  ],
+  "Neutral": [
+    "Take a short break and do a micro-task you enjoy.",
+    "Try a short mindfulness or stretch to refresh."
+  ]
+}
