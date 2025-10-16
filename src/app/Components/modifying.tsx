@@ -23,11 +23,12 @@ import {
 } from "lucide-react";
 import Image from 'next/image';
 
-// Beautiful brown square nodes neural network - slow, smooth animation
-const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: string }> = ({ 
+// Beautiful brown square nodes neural network - horizontal left-to-right animation
+const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: string; horizontal?: boolean }> = ({ 
   size = 100, 
   nodes = 9, 
-  className 
+  className,
+  horizontal = false
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -36,16 +37,45 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
     if (!svg) return;
     const NS = 'http://www.w3.org/2000/svg';
     
-    const N = Math.max(6, Math.min(12, nodes));
-    const nodesData: { x: number; y: number; phase: number; speed: number }[] = [];
+    // Add glow filter for depth
+    const defs = document.createElementNS(NS, 'defs');
+    const filter = document.createElementNS(NS, 'filter');
+    filter.setAttribute('id', `glow-${Math.random()}`);
+    filter.setAttribute('x', '-50%');
+    filter.setAttribute('y', '-50%');
+    filter.setAttribute('width', '200%');
+    filter.setAttribute('height', '200%');
     
-    // Create grid-like initial positions for more structured look
+    const feGaussianBlur = document.createElementNS(NS, 'feGaussianBlur');
+    feGaussianBlur.setAttribute('stdDeviation', '1.5');
+    feGaussianBlur.setAttribute('result', 'coloredBlur');
+    
+    const feMerge = document.createElementNS(NS, 'feMerge');
+    const feMergeNode1 = document.createElementNS(NS, 'feMergeNode');
+    feMergeNode1.setAttribute('in', 'coloredBlur');
+    const feMergeNode2 = document.createElementNS(NS, 'feMergeNode');
+    feMergeNode2.setAttribute('in', 'SourceGraphic');
+    
+    feMerge.appendChild(feMergeNode1);
+    feMerge.appendChild(feMergeNode2);
+    filter.appendChild(feGaussianBlur);
+    filter.appendChild(feMerge);
+    defs.appendChild(filter);
+    svg.appendChild(defs);
+    
+    const filterId = filter.getAttribute('id') || 'glow';
+    const N = Math.max(6, Math.min(12, nodes));
+    const nodesData: { x: number; y: number; phase: number; speed: number; size: number; pulsePhase: number }[] = [];
+    
+    // Create nodes - spread evenly for horizontal movement
     for (let i = 0; i < N; i++) {
       nodesData.push({
-        x: size * (0.15 + Math.random() * 0.7),
-        y: size * (0.15 + Math.random() * 0.7),
+        x: horizontal ? size * (i / (N - 1)) : size * (0.15 + Math.random() * 0.7),
+        y: horizontal ? size * (0.3 + Math.random() * 0.4) : size * (0.15 + Math.random() * 0.7),
         phase: Math.random() * Math.PI * 2,
-        speed: 0.2 + Math.random() * 0.3 // Slower speed for gentle movement
+        speed: horizontal ? 0.15 + Math.random() * 0.2 : 0.2 + Math.random() * 0.3,
+        size: 3.5 + Math.random() * 1.5,
+        pulsePhase: Math.random() * Math.PI * 2
       });
     }
 
@@ -55,23 +85,25 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
     const squares: SVGRectElement[] = [];
     const lines: SVGLineElement[] = [];
 
-    // Create brown square nodes
+    // Create nodes with eye-friendly colors
     for (let i = 0; i < N; i++) {
       const square = document.createElementNS(NS, 'rect');
-      const squareSize = 4;
+      const squareSize = nodesData[i].size;
       square.setAttribute('x', String(nodesData[i].x - squareSize / 2));
       square.setAttribute('y', String(nodesData[i].y - squareSize / 2));
       square.setAttribute('width', String(squareSize));
       square.setAttribute('height', String(squareSize));
-      square.setAttribute('fill', '#92400e'); // Brown color
+      square.setAttribute('fill', '#14b8a6'); // Soft teal - eye-friendly
       square.setAttribute('fill-opacity', '0.7');
-      square.setAttribute('rx', '1'); // Slightly rounded corners
+      square.setAttribute('rx', '1.5');
+      square.setAttribute('filter', `url(#${filterId})`);
+      square.setAttribute('data-base-size', String(squareSize));
       group.appendChild(square);
       squares.push(square);
     }
 
     // Create connecting lines
-    const threshold = size * 0.4;
+    const threshold = horizontal ? size * 0.6 : size * 0.4;
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < N; j++) {
         const a = nodesData[i];
@@ -79,9 +111,10 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (d < threshold) {
           const line = document.createElementNS(NS, 'line');
-          line.setAttribute('stroke', '#92400e'); // Brown color
+          line.setAttribute('stroke', '#5eead4'); // Lighter teal for lines
           line.setAttribute('stroke-width', '1');
-          line.setAttribute('stroke-opacity', '0.2');
+          line.setAttribute('stroke-opacity', '0');
+          line.setAttribute('stroke-linecap', 'round');
           line.setAttribute('data-i', String(i));
           line.setAttribute('data-j', String(j));
           group.appendChild(line);
@@ -96,26 +129,43 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
     const animate = (t: number) => {
       const elapsed = (t - t0) / 1000;
       
-      // Slow, gentle movement
+      // Horizontal left-to-right flow or gentle circular movement
       for (let i = 0; i < N; i++) {
         const n = nodesData[i];
-        const amplitude = 3; // Small movement range
-        const nx = n.x + Math.sin(elapsed * n.speed + n.phase) * amplitude;
-        const ny = n.y + Math.cos(elapsed * (n.speed * 0.8) + n.phase) * amplitude;
+        let nx, ny;
         
-        const squareSize = 4;
-        squares[i].setAttribute('x', String(nx - squareSize / 2));
-        squares[i].setAttribute('y', String(ny - squareSize / 2));
+        if (horizontal) {
+          // Left-to-right flowing movement
+          const flowSpeed = 0.08;
+          const baseX = (n.x + elapsed * size * flowSpeed) % size;
+          const waveAmplitude = 2;
+          nx = baseX;
+          ny = n.y + Math.sin(elapsed * n.speed + n.phase) * waveAmplitude;
+        } else {
+          const amplitude = 3.5;
+          nx = n.x + Math.sin(elapsed * n.speed + n.phase) * amplitude;
+          ny = n.y + Math.cos(elapsed * (n.speed * 0.8) + n.phase) * amplitude;
+        }
+        
+        // Subtle breathing/pulsing effect
+        const baseSize = n.size;
+        const pulse = Math.sin(elapsed * 0.8 + n.pulsePhase) * 0.4;
+        const currentSize = baseSize + pulse;
+        
+        squares[i].setAttribute('x', String(nx - currentSize / 2));
+        squares[i].setAttribute('y', String(ny - currentSize / 2));
+        squares[i].setAttribute('width', String(currentSize));
+        squares[i].setAttribute('height', String(currentSize));
       }
 
-      // Update connecting lines with fade based on distance
+      // Update connecting lines
       lines.forEach((line) => {
         const iIdx = Number(line.getAttribute('data-i'));
         const jIdx = Number(line.getAttribute('data-j'));
-        const xi = Number(squares[iIdx].getAttribute('x')) + 2; // Center of square
-        const yi = Number(squares[iIdx].getAttribute('y')) + 2;
-        const xj = Number(squares[jIdx].getAttribute('x')) + 2;
-        const yj = Number(squares[jIdx].getAttribute('y')) + 2;
+        const xi = Number(squares[iIdx].getAttribute('x')) + nodesData[iIdx].size / 2;
+        const yi = Number(squares[iIdx].getAttribute('y')) + nodesData[iIdx].size / 2;
+        const xj = Number(squares[jIdx].getAttribute('x')) + nodesData[jIdx].size / 2;
+        const yj = Number(squares[jIdx].getAttribute('y')) + nodesData[jIdx].size / 2;
         
         line.setAttribute('x1', String(xi));
         line.setAttribute('y1', String(yi));
@@ -123,7 +173,9 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
         line.setAttribute('y2', String(yj));
         
         const dist = Math.hypot(xi - xj, yi - yj);
-        const opacity = 0.15 * (1 - Math.min(dist / threshold, 1));
+        const baseOpacity = 0.25 * (1 - Math.min(dist / threshold, 1));
+        const wave = Math.sin(elapsed * 0.5 + iIdx + jIdx) * 0.1;
+        const opacity = Math.max(0, Math.min(0.3, baseOpacity + wave));
         line.setAttribute('stroke-opacity', String(opacity));
       });
 
@@ -134,9 +186,10 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
 
     return () => {
       cancelAnimationFrame(raf);
+      if (svg.contains(defs)) svg.removeChild(defs);
       if (svg.contains(group)) svg.removeChild(group);
     };
-  }, [size, nodes]);
+  }, [size, nodes, horizontal]);
 
   return (
     <div className={className} style={{ width: size, height: size, pointerEvents: 'none' }} aria-hidden="true">
@@ -1608,6 +1661,11 @@ useEffect(() => {
           </div>
         </div>
 
+        {/* Center - Neural Network Animation flowing left to right */}
+        <div className="flex-1 flex justify-center items-center px-8">
+          <NeuralNetwork size={180} nodes={8} horizontal={true} />
+        </div>
+
         <div className="flex items-center space-x-4">
           <div className={`flex items-center space-x-2 px-4 py-2 ${theme.statusBg} rounded-full border ${theme.border}`}>
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -1900,11 +1958,7 @@ useEffect(() => {
           <div className="space-y-6">
             <div className={`${theme.cardBg} backdrop-blur-xl rounded-2xl border ${theme.border} p-6 shadow-lg`}>
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <h2 className={`text-xl font-bold ${theme.textPrimary}`}>Live Emotion Analysis</h2>
-                  {/* Beautiful brown square nodes neural network */}
-                  <NeuralNetwork size={90} nodes={9} />
-                </div>
+                <h2 className={`text-xl font-bold ${theme.textPrimary}`}>Live Emotion Analysis</h2>
                 <div className={`px-3 py-1 ${theme.statusBg} rounded-full border ${theme.border}`}>
                   <span className={`text-xs font-medium ${theme.statusText}`}>
                     {currentEmotion ? "DETECTED" : isCameraActive ? "ANALYZING" : "INACTIVE"}
