@@ -1347,10 +1347,21 @@ useEffect(() => {
   if (currentEmotion && isNegativeEmotion(currentEmotion) && crewAISolutionFetched !== currentEmotion && userDescription.trim().length > 0) {
     (async () => {
       try {
+        // Prepare user context for personalized recommendations
+        const userContext = {
+          emotion: currentEmotion,
+          reason: userDescription,
+          name: profile?.name || undefined,
+          email: profile?.email || undefined,
+          gender: profile?.gender || undefined,
+          ageGroup: profile?.ageGroup || profile?.age_group || undefined,
+          age: profile?.age || undefined
+        };
+
         const res = await fetch('http://127.0.0.1:5000/crewai/recommend', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ emotion: currentEmotion, reason: userDescription, name: profile?.name || undefined })
+          body: JSON.stringify(userContext)
         });
 
         const data = await res.json();
@@ -1695,7 +1706,7 @@ useEffect(() => {
             size={140} 
             nodes={10} 
             horizontal={true} 
-            color="#6b7280" 
+            color="#6b7289" 
             lineColor="#9ca3af"
           />
           {/* Red Animation */}
@@ -1703,7 +1714,7 @@ useEffect(() => {
             size={140} 
             nodes={10} 
             horizontal={true} 
-            color="#ef4444" 
+            color="red" 
             lineColor="#fca5a5"
           />
           {/* Yellow Animation */}

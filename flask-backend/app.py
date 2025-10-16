@@ -689,7 +689,11 @@ def predict_audio():
 def crewai_recommend():
     data = request.json
     emotion = data.get('emotion')
-    age_group = data.get('age_group')
+    # Support both camelCase (ageGroup) and snake_case (age_group)
+    age_group = data.get('ageGroup') or data.get('age_group')
+    gender = data.get('gender')
+    email = data.get('email')
+    age = data.get('age')
     # allow reason to be optional (empty string accepted)
     reason = data.get('reason', '')
     async_mode = data.get('async', True)
@@ -699,6 +703,16 @@ def crewai_recommend():
         name = data.get('name') or data.get('user_name') or data.get('username')
     if not emotion:
         return jsonify({'error': 'Emotion is required'}), 400
+    
+    # Build user context for personalization
+    user_context = {
+        'reason': reason,
+        'age_group': age_group,
+        'gender': gender,
+        'email': email,
+        'age': age,
+        'name': name
+    }
     try:
         # --- hardcoded mapping override: if the reason contains a keyword
         # mapped in crewai_hardcoded_map.json, return that mapping's fallback
@@ -723,9 +737,7 @@ def crewai_recommend():
                     except Exception:
                         fallbacks = {}
                     suggestions = fallbacks.get(matched) or fallbacks.get('Neutral', [])
-                    payload = {'reason': reason}
-                    if name:
-                        payload['name'] = name
+                    payload = {**user_context}  # Use full user context
                     if len(suggestions) == 1 and isinstance(suggestions[0], str) and '\n' in suggestions[0]:
                         sol = _interpolate(suggestions[0], payload)
                         return jsonify({'solution': sol, 'hardcoded': True}), 200
@@ -741,27 +753,23 @@ def crewai_recommend():
             job_id = str(uuid.uuid4())
             # enqueue the job for background worker to pick up
             with crewai_queue_lock:
-                crewai_queue.append((job_id, emotion, {'reason': reason, 'age_group': age_group}))
+                crewai_queue.append((job_id, emotion, user_context))
             with _jobs_lock:
                 _jobs[job_id] = {'status': 'pending', 'result': None}
             return jsonify({'job_id': job_id}), 202
 
         # synchronous fallback
         # Try to use cache first for sync calls
-        payload = {'reason': reason, 'age_group': age_group}
-        cached = _cache_get(emotion, payload)
+        cached = _cache_get(emotion, user_context)
         if cached is not None:
-            # Interpolate placeholders (e.g., {name}) per-request using payload
-            sol = _interpolate(cached, payload)
+            # Interpolate placeholders (e.g., {name}, {age_group}) per-request using user_context
+            sol = _interpolate(cached, user_context)
             return jsonify({'solution': sol, 'cached': True})
         try:
-            # Pass age_group into crewai call if present
-            if age_group:
-                result = call_crewai_with_retries(emotion, payload, max_attempts=5, base_wait=1.0)
-            else:
-                result = call_crewai_with_retries(emotion, reason, max_attempts=5, base_wait=1.0)
+            # Pass full user context into crewai call
+            result = call_crewai_with_retries(emotion, user_context, max_attempts=5, base_wait=1.0)
             sol = getattr(result, 'raw', str(result))
-            _cache_set(emotion, payload, sol)
+            _cache_set(emotion, user_context, sol)
             return jsonify({'solution': sol})
         except Exception as exc:
             # If rate-limited or other issue, use local fallback and cache it

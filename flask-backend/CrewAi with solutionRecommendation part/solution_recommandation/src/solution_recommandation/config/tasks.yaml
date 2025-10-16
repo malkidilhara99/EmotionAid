@@ -1,18 +1,20 @@
 emotion_intake_task:
   description: >
-    Start by confirming the emotion "{emotion}" detected by the system this year ({current_year}).
-    Use reliable methods to check:
-    - If this emotion is correct
-    - How strong the emotion is (on a scale from 1 to 10)
-    - If the person might need urgent support
-    - Anything cultural or personal that might affect how they show emotions
+    Start by confirming the emotion "{emotion}" detected by the system this year ({current_year}) for a {age_group} {gender} individual.
+    Use reliable, age-appropriate methods to check:
+    - If this emotion is correct and developmentally typical for their age group
+    - How strong the emotion is (on a scale from 1 to 10, considering age-appropriate norms)
+    - If the person might need urgent support (age-specific risk factors)
+    - Anything cultural, developmental, or personal that might affect how they show emotions
+    - Life stage considerations (e.g., school stress for teens, career pressure for young adults, health concerns for seniors)
 
-    Be gentle, respectful, and focused on helping.
+    Be gentle, respectful, age-appropriate, and focused on helping.
   expected_output: >
     - Confirmed emotion with confidence level
-    - A simple severity score (1–10)
-    - Any urgent safety concerns (yes/no)
-    - Notes on cultural or personal factors
+    - A simple severity score (1–10) with age-appropriate context
+    - Any urgent safety concerns (yes/no) with age-specific considerations
+    - Notes on cultural, developmental, or personal factors
+    - Age group context: {age_group}
   agent: emotion_intake_agent
   guardrail: safety_and_ethics_check
   human_input: false
@@ -20,17 +22,20 @@ emotion_intake_task:
 
 contextual_analysis_task:
   description: >
-    Understand what might be causing "{emotion}" based on the reason: "{reason}".
-    Use psychological and social knowledge to explain:
-    - Why this might feel so strong or significant (e.g., validation, loss, transition, aspiration).
-    - What patterns it fits into (e.g., achievement, grief, stress, personal growth).
-    - What might make it harder or easier to handle or *leverage* for future well-being.
-    - **Crucially, derive 3-5 specific, actionable "solution themes" or "focus areas" directly from the reason that future steps should prioritize. For an academic achievement, these might be "continued intellectual growth," "career advancement," "savoring recognition," or "sharing success." For a negative emotion, it might be "coping with loss," "stress reduction," or "conflict resolution."**
+    Understand what might be causing "{emotion}" for a {age_group} {gender} individual based on the reason: "{reason}".
+    Use psychological, developmental, and social knowledge to explain:
+    - Why this might feel so strong or significant at this life stage (e.g., validation, loss, transition, aspiration, developmental milestone).
+    - What age-specific patterns it fits into (e.g., identity formation for teens, career stress for young adults, life transitions for seniors).
+    - Age-appropriate challenges and opportunities related to this emotion.
+    - Gender considerations if relevant to emotional expression or experience.
+    - What might make it harder or easier to handle or *leverage* for future well-being at this age.
+    - **Crucially, derive 3-5 specific, age-appropriate, actionable "solution themes" or "focus areas" directly from the reason that future steps should prioritize.**
   expected_output: >
-    - Easy-to-understand explanation of how the emotion and reason are connected.
-    - Personal, social, or cultural factors that affect the feeling.
-    - Helpful insights about what might support healing (for negative) or amplifying/savoring/leveraging the feeling (for positive).
-    - **A prioritized list of 3-5 "Solution Themes" (e.g., "Theme: Career Advancement," "Theme: Savoring Personal Milestone") that directly stem from the reason and emotion. These themes must be specific enough to guide research and personalized interventions.**
+    - Easy-to-understand explanation of how the emotion and reason are connected for a {age_group} individual.
+    - Developmental, personal, social, or cultural factors that affect the feeling.
+    - Age-specific insights about what might support healing (for negative) or amplifying/savoring/leveraging the feeling (for positive).
+    - **A prioritized list of 3-5 age-appropriate "Solution Themes" that directly stem from the reason, emotion, and life stage.**
+    - User context: {age_group}, {gender}
   agent: contextual_analysis_researcher
   context: [emotion_intake_task]
   reasoning: true
@@ -60,18 +65,20 @@ evidence_validation_task:
 
 personalized_intervention_task:
   description: >
-    Create a simple, clear plan for helping someone with "{emotion}" using the best suggestions.
+    Create a simple, clear, age-appropriate plan for helping a {age_group} {gender} individual with "{emotion}" using the best suggestions.
     Make sure:
-    - The steps are doable in daily life.
-    - The advice is culturally respectful and easy to follow.
-    - The person gets a mix of quick ideas (today) and lasting ones (over weeks).
-    - **The suggestions are *hyper-tailored* to the reason "{reason}" and its specific context and implications, directly addressing the "Solution Themes" identified.**
-    - For positive emotions and achievements, include suggestions for savoring, celebrating, and leveraging the success *in ways that directly relate to the achievement (e.g., for a degree: exploring PhDs, networking in the field, specific celebrations of academic success)*.
+    - The steps are doable in daily life and realistic for their age group and life stage.
+    - The advice is culturally respectful, age-appropriate, and easy to follow.
+    - Language and examples match the developmental level of {age_group}.
+    - The person gets a mix of quick ideas (today) and lasting ones (over weeks) appropriate for their life context.
+    - **The suggestions are *hyper-tailored* to the reason "{reason}" and its specific context, directly addressing the "Solution Themes" identified, with age-appropriate adaptations.**
+    - For positive emotions, include age-appropriate suggestions for savoring, celebrating, and leveraging success.
   expected_output: >
-    - 2 or 3 things to try right away that are **highly relevant to the "Solution Themes" and the reason.** (e.g., "plan a small celebration for your academic achievement," "write down 3 specific skills you gained from your degree").
-    - 3 or 4 things to work on in the coming weeks that are **highly relevant to the "Solution Themes" and the reason.** (e.g., "research PhD programs in your field," "join professional associations enabled by your degree," "schedule a meeting with a mentor to discuss career paths").
-    - Clear, practical examples for each step.
-    - Notes for accessibility and when to ask a real therapist.
+    - 2 or 3 things to try right away that are **age-appropriate, highly relevant to the "Solution Themes" and the reason.**
+    - 3 or 4 things to work on in the coming weeks that are **developmentally suitable for {age_group} and relevant to the "Solution Themes."**
+    - Clear, practical, age-appropriate examples for each step.
+    - Notes for accessibility and when to ask a real therapist (with age-appropriate resources).
+    - User context: {age_group}, {gender}
   agent: personalized_solution_generator
   context: [emotion_intake_task, contextual_analysis_task, evidence_validation_task]
   allow_code_execution: false
