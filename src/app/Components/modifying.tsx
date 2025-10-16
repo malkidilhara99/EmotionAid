@@ -25,7 +25,11 @@ import {
   Calendar,
   TrendingUp,
   Clock,
-  X
+  X,
+  Trophy,
+  Award,
+  Star,
+  Flame
 } from "lucide-react";
 import Image from 'next/image';
 
@@ -740,7 +744,79 @@ const EnhancedEmotionAid = () => {
   const [emotionHistory, setEmotionHistory] = useState<EmotionRecord[]>([]);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
-  // Load dark mode preference and emotion history from localStorage
+  // Gamification & Achievements
+  type Achievement = {
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    unlockedAt?: number;
+    progress?: number;
+    target?: number;
+    category: 'streak' | 'detection' | 'wellness' | 'mastery';
+  };
+
+  type UserStats = {
+    totalDetections: number;
+    currentStreak: number;
+    longestStreak: number;
+    lastDetectionDate: string; // YYYY-MM-DD
+    level: number;
+    xp: number;
+    unlockedAchievements: string[];
+    emotionGoals: {
+      targetEmotion: Emotion;
+      currentCount: number;
+      targetCount: number;
+      startDate: number;
+    }[];
+  };
+
+  const [userStats, setUserStats] = useState<UserStats>({
+    totalDetections: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastDetectionDate: '',
+    level: 1,
+    xp: 0,
+    unlockedAchievements: [],
+    emotionGoals: []
+  });
+
+  const [showAchievementPopup, setShowAchievementPopup] = useState(false);
+  const [newlyUnlockedAchievement, setNewlyUnlockedAchievement] = useState<Achievement | null>(null);
+  const [showGoalsPanel, setShowGoalsPanel] = useState(false);
+
+  // Define all achievements (memoized to prevent re-renders)
+  const allAchievements: Achievement[] = React.useMemo(() => [
+    // Streak Achievements
+    { id: 'streak_3', title: 'Getting Started', description: 'Check your emotions for 3 days in a row', icon: '🔥', category: 'streak' as const, target: 3 },
+    { id: 'streak_7', title: 'Week Warrior', description: 'Maintain a 7-day streak', icon: '⚡', category: 'streak' as const, target: 7 },
+    { id: 'streak_14', title: 'Two Week Champion', description: '14 days of consistent tracking', icon: '💪', category: 'streak' as const, target: 14 },
+    { id: 'streak_30', title: 'Monthly Master', description: '30 days straight - incredible!', icon: '👑', category: 'streak' as const, target: 30 },
+    { id: 'streak_100', title: 'Century Club', description: '100 day streak - legendary!', icon: '🏆', category: 'streak' as const, target: 100 },
+    
+    // Detection Count Achievements
+    { id: 'detect_10', title: 'First Steps', description: 'Complete 10 emotion detections', icon: '🎯', category: 'detection' as const, target: 10 },
+    { id: 'detect_50', title: 'Emotion Explorer', description: 'Reach 50 detections', icon: '🔍', category: 'detection' as const, target: 50 },
+    { id: 'detect_100', title: 'Emotion Enthusiast', description: '100 detections milestone', icon: '🌟', category: 'detection' as const, target: 100 },
+    { id: 'detect_500', title: 'Emotion Expert', description: '500 detections - you\'re dedicated!', icon: '💎', category: 'detection' as const, target: 500 },
+    { id: 'detect_1000', title: 'Emotion Master', description: '1000 detections - absolute legend!', icon: '🎖️', category: 'detection' as const, target: 1000 },
+    
+    // Wellness Achievements
+    { id: 'happy_10', title: 'Joyful Journey', description: 'Experience happiness 10 times', icon: '😊', category: 'wellness' as const, target: 10 },
+    { id: 'happy_50', title: 'Happiness Hero', description: '50 happy moments captured', icon: '🌈', category: 'wellness' as const, target: 50 },
+    { id: 'balanced_week', title: 'Emotional Balance', description: 'Experience all 7 emotions in a week', icon: '⚖️', category: 'wellness' as const, target: 7 },
+    { id: 'positive_streak_5', title: 'Positivity Streak', description: '5 positive emotions in a row', icon: '✨', category: 'wellness' as const, target: 5 },
+    
+    // Mastery Achievements
+    { id: 'multimodal_10', title: 'Tech Savvy', description: 'Use both face and voice detection 10 times', icon: '🎤', category: 'mastery' as const, target: 10 },
+    { id: 'early_bird', title: 'Early Bird', description: 'Check emotions before 8 AM', icon: '🌅', category: 'mastery' as const, target: 1 },
+    { id: 'night_owl', title: 'Night Owl', description: 'Check emotions after 10 PM', icon: '🌙', category: 'mastery' as const, target: 1 },
+    { id: 'weekend_warrior', title: 'Weekend Warrior', description: 'Track emotions on both weekend days', icon: '🎉', category: 'mastery' as const, target: 2 },
+  ], []);
+
+  // Load dark mode preference, emotion history, and user stats from localStorage
   useEffect(() => {
     try {
       const savedDarkMode = localStorage.getItem('emotionAidDarkMode');
@@ -751,6 +827,11 @@ const EnhancedEmotionAid = () => {
       const savedHistory = localStorage.getItem('emotionAidHistory');
       if (savedHistory !== null) {
         setEmotionHistory(JSON.parse(savedHistory));
+      }
+
+      const savedStats = localStorage.getItem('emotionAidStats');
+      if (savedStats !== null) {
+        setUserStats(JSON.parse(savedStats));
       }
     } catch (err) { void err; }
   }, []);
@@ -781,7 +862,137 @@ const EnhancedEmotionAid = () => {
       } catch (err) { void err; }
       return updated;
     });
+
+    // Update stats and check for achievements
+    updateStatsAndCheckAchievements(emotion, mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update user stats and check for new achievements
+  const updateStatsAndCheckAchievements = React.useCallback((emotion: Emotion, mode: 'face' | 'voice' | 'both') => {
+    setUserStats(prev => {
+      const today = new Date().toISOString().split('T')[0];
+      const isNewDay = prev.lastDetectionDate !== today;
+      
+      // Calculate streak
+      let newStreak = prev.currentStreak;
+      if (isNewDay) {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        newStreak = prev.lastDetectionDate === yesterday ? prev.currentStreak + 1 : 1;
+      }
+
+      // Calculate XP gain (10 XP per detection, bonus for streaks)
+      const baseXP = 10;
+      const streakBonus = Math.floor(newStreak / 7) * 5; // +5 XP per week streak
+      const xpGain = baseXP + streakBonus;
+      const newXP = prev.xp + xpGain;
+      
+      // Calculate level (every 100 XP = 1 level)
+      const newLevel = Math.floor(newXP / 100) + 1;
+
+      const updated: UserStats = {
+        ...prev,
+        totalDetections: prev.totalDetections + 1,
+        currentStreak: newStreak,
+        longestStreak: Math.max(prev.longestStreak, newStreak),
+        lastDetectionDate: today,
+        level: newLevel,
+        xp: newXP
+      };
+
+      // Save to localStorage
+      try {
+        localStorage.setItem('emotionAidStats', JSON.stringify(updated));
+      } catch (err) { void err; }
+
+      // Check for new achievements
+      checkNewAchievements(updated, emotion, mode);
+
+      return updated;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Check if user has unlocked new achievements
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const checkNewAchievements = React.useCallback((stats: UserStats, _emotion: Emotion, _mode: 'face' | 'voice' | 'both') => {
+    const newAchievements: Achievement[] = [];
+
+    allAchievements.forEach(achievement => {
+      // Skip if already unlocked
+      if (stats.unlockedAchievements.includes(achievement.id)) return;
+
+      let shouldUnlock = false;
+
+      // Check streak achievements
+      if (achievement.category === 'streak' && achievement.target) {
+        shouldUnlock = stats.currentStreak >= achievement.target;
+      }
+
+      // Check detection count achievements
+      if (achievement.category === 'detection' && achievement.target) {
+        shouldUnlock = stats.totalDetections >= achievement.target;
+      }
+
+      // Check wellness achievements
+      if (achievement.category === 'wellness') {
+        if (achievement.id === 'happy_10' || achievement.id === 'happy_50') {
+          const happyCount = emotionHistory.filter(r => r.emotion === 'Happy').length;
+          const target = achievement.id === 'happy_10' ? 10 : 50;
+          shouldUnlock = happyCount >= target;
+        }
+      }
+
+      // Check mastery achievements
+      if (achievement.category === 'mastery') {
+        if (achievement.id === 'multimodal_10') {
+          const multiCount = emotionHistory.filter(r => r.detectionMode === 'both').length;
+          shouldUnlock = multiCount >= 10;
+        } else if (achievement.id === 'early_bird') {
+          const hour = new Date().getHours();
+          shouldUnlock = hour < 8;
+        } else if (achievement.id === 'night_owl') {
+          const hour = new Date().getHours();
+          shouldUnlock = hour >= 22;
+        }
+      }
+
+      if (shouldUnlock) {
+        newAchievements.push({ ...achievement, unlockedAt: Date.now() });
+      }
+    });
+
+    // Show popup for first new achievement
+    if (newAchievements.length > 0) {
+      const firstNew = newAchievements[0];
+      setNewlyUnlockedAchievement(firstNew);
+      setShowAchievementPopup(true);
+
+      // Add notification
+      try {
+        const addNotif = (title: string, message?: string) => {
+          const n: Notification = { id: String(Date.now()) + Math.random().toString(36).slice(2,6), title, message, time: Date.now(), read: false };
+          setNotifications(prev => { const next = [n, ...(prev || [])].slice(0, 50); try { localStorage.setItem('emotionAidNotifications', JSON.stringify(next.slice(0, 50))); } catch (e) { void e; } return next; });
+        };
+        addNotif(`🏆 Achievement Unlocked!`, firstNew.title);
+      } catch (err) { void err; }
+
+      // Update stats with new achievements
+      setUserStats(prev => {
+        const updated = {
+          ...prev,
+          unlockedAchievements: [...prev.unlockedAchievements, ...newAchievements.map(a => a.id)]
+        };
+        try {
+          localStorage.setItem('emotionAidStats', JSON.stringify(updated));
+        } catch (err) { void err; }
+        return updated;
+      });
+
+      // Auto-hide popup after 5 seconds
+      setTimeout(() => setShowAchievementPopup(false), 5000);
+    }
+  }, [emotionHistory, allAchievements]);
 
   // Helper function to generate consistent avatar colors based on name
   const getAvatarColor = (name: string) => {
@@ -1037,10 +1248,11 @@ const EnhancedEmotionAid = () => {
     try { localStorage.setItem('emotionAidNotifications', JSON.stringify(ns.slice(0, 50))); } catch (e) { void e; }
   };
 
-  const addNotification = (title: string, message?: string) => {
+  const addNotification = React.useCallback((title: string, message?: string) => {
     const n: Notification = { id: String(Date.now()) + Math.random().toString(36).slice(2,6), title, message, time: Date.now(), read: false };
     setNotifications(prev => { const next = [n, ...(prev || [])].slice(0, 50); persistNotifications(next); return next; });
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const markNotificationRead = (id?: string) => {
     setNotifications(prev => {
@@ -1237,6 +1449,7 @@ const EnhancedEmotionAid = () => {
     { id: "dashboard", icon: <Home className="w-5 h-5" />, label: "Dashboard" },
     { id: "analytics", icon: <BarChart3 className="w-5 h-5" />, label: "Analytics" },
     { id: "history", icon: <History className="w-5 h-5" />, label: "History" },
+    { id: "goals", icon: <Trophy className="w-5 h-5" />, label: "Goals & Achievements" },
     { id: "settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },
   ];
 
@@ -2103,19 +2316,24 @@ useEffect(() => {
                   onClick={() => {
                     if (item.id === 'history') {
                       setShowHistoryPanel(true);
+                      setShowGoalsPanel(false);
+                    } else if (item.id === 'goals') {
+                      setShowGoalsPanel(true);
+                      setShowHistoryPanel(false);
                     } else {
                       setActiveMenu(item.id);
                       setShowHistoryPanel(false);
+                      setShowGoalsPanel(false);
                     }
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    activeMenu === item.id || (item.id === 'history' && showHistoryPanel)
+                    activeMenu === item.id || (item.id === 'history' && showHistoryPanel) || (item.id === 'goals' && showGoalsPanel)
                       ? `${theme.statusBg} ${theme.textSecondary} border ${theme.border}`
                       : `${theme.textPrimary} hover:${theme.statusBg} hover:${theme.textSecondary}`
                   }`}
                   style={{ userSelect: 'none' }}
                 >
-                  <div className={activeMenu === item.id || (item.id === 'history' && showHistoryPanel) ? theme.textSecondary : "text-slate-500"}>
+                  <div className={activeMenu === item.id || (item.id === 'history' && showHistoryPanel) || (item.id === 'goals' && showGoalsPanel) ? theme.textSecondary : "text-slate-500"}>
                     {item.icon}
                   </div>
                   <span style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif', userSelect: 'none' }}>{item.label}</span>
@@ -2906,6 +3124,159 @@ useEffect(() => {
                 </>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goals & Achievements Panel */}
+      {showGoalsPanel && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90000] flex items-center justify-end" onClick={() => setShowGoalsPanel(false)}>
+          <div 
+            className={`w-full max-w-3xl h-full ${theme.cardBg} shadow-2xl overflow-y-auto animate-slide-in-right`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className={`sticky top-0 ${theme.navBg} backdrop-blur-xl border-b ${theme.border} p-6 flex items-center justify-between z-10`}>
+              <div className="flex items-center space-x-3">
+                <div className={`w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center animate-pulse`}>
+                  <Trophy className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className={`text-2xl font-bold ${theme.textPrimary}`}>Goals & Achievements</h2>
+                  <p className={`text-sm ${theme.textSecondary}`}>Level {userStats.level} • {userStats.xp} XP</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowGoalsPanel(false)}
+                className={`w-10 h-10 ${theme.statusBg} rounded-xl flex items-center justify-center hover:scale-105 transition-all`}
+              >
+                <X className={`w-5 h-5 ${theme.textSecondary}`} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Level & XP Progress */}
+              <div className={`${theme.statusBg} rounded-xl p-6 border ${theme.border}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className={`text-xl font-bold ${theme.textPrimary}`}>Level {userStats.level}</h3>
+                    <p className={`text-sm ${theme.textSecondary}`}>{userStats.xp} / {userStats.level * 100} XP</p>
+                  </div>
+                  <div className="text-4xl">🎖️</div>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-amber-500 to-orange-600 transition-all duration-500"
+                    style={{ width: `${((userStats.xp % 100) / 100) * 100}%` }}
+                  />
+                </div>
+                <p className={`text-xs ${theme.textSecondary} mt-2`}>
+                  {100 - (userStats.xp % 100)} XP until Level {userStats.level + 1}
+                </p>
+              </div>
+
+              {/* Streak Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className={`${theme.statusBg} rounded-xl p-4 border ${theme.border} text-center`}>
+                  <Flame className={`w-8 h-8 mx-auto mb-2 text-orange-500`} />
+                  <p className={`text-2xl font-bold ${theme.textPrimary}`}>{userStats.currentStreak}</p>
+                  <p className={`text-xs ${theme.textSecondary}`}>Day Streak</p>
+                </div>
+                <div className={`${theme.statusBg} rounded-xl p-4 border ${theme.border} text-center`}>
+                  <Star className={`w-8 h-8 mx-auto mb-2 text-yellow-500`} />
+                  <p className={`text-2xl font-bold ${theme.textPrimary}`}>{userStats.longestStreak}</p>
+                  <p className={`text-xs ${theme.textSecondary}`}>Best Streak</p>
+                </div>
+                <div className={`${theme.statusBg} rounded-xl p-4 border ${theme.border} text-center`}>
+                  <Target className={`w-8 h-8 mx-auto mb-2 text-blue-500`} />
+                  <p className={`text-2xl font-bold ${theme.textPrimary}`}>{userStats.totalDetections}</p>
+                  <p className={`text-xs ${theme.textSecondary}`}>Total Checks</p>
+                </div>
+              </div>
+
+              {/* Achievements by Category */}
+              {['streak', 'detection', 'wellness', 'mastery'].map(category => {
+                const categoryAchievements = allAchievements.filter(a => a.category === category);
+                const unlockedCount = categoryAchievements.filter(a => userStats.unlockedAchievements.includes(a.id)).length;
+                const categoryNames: Record<string, string> = {
+                  streak: 'Streak Master',
+                  detection: 'Detection Expert',
+                  wellness: 'Wellness Warrior',
+                  mastery: 'Emotion Master'
+                };
+                const categoryIcons: Record<string, React.ReactNode> = {
+                  streak: <Flame className="w-5 h-5" />,
+                  detection: <Target className="w-5 h-5" />,
+                  wellness: <Heart className="w-5 h-5" />,
+                  mastery: <Award className="w-5 h-5" />
+                };
+
+                return (
+                  <div key={category} className={`${theme.cardBg} rounded-xl p-6 border ${theme.border}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-2">
+                        <div className={theme.textSecondary}>{categoryIcons[category]}</div>
+                        <h3 className={`text-lg font-bold ${theme.textPrimary}`}>{categoryNames[category]}</h3>
+                      </div>
+                      <span className={`text-sm ${theme.textSecondary}`}>
+                        {unlockedCount}/{categoryAchievements.length}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {categoryAchievements.map(achievement => {
+                        const isUnlocked = userStats.unlockedAchievements.includes(achievement.id);
+                        return (
+                          <div 
+                            key={achievement.id}
+                            className={`p-4 rounded-lg border-2 transition-all ${
+                              isUnlocked 
+                                ? `border-amber-500 ${theme.statusBg}` 
+                                : `border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 opacity-60`
+                            }`}
+                          >
+                            <div className="text-3xl mb-2">{achievement.icon}</div>
+                            <h4 className={`font-bold text-sm ${isUnlocked ? theme.textPrimary : 'text-gray-500'}`}>
+                              {achievement.title}
+                            </h4>
+                            <p className={`text-xs mt-1 ${isUnlocked ? theme.textSecondary : 'text-gray-400'}`}>
+                              {achievement.description}
+                            </p>
+                            {isUnlocked && (
+                              <div className="mt-2 flex items-center space-x-1 text-xs text-amber-600 dark:text-amber-400">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Unlocked!</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Achievement Unlock Popup */}
+      {showAchievementPopup && newlyUnlockedAchievement && (
+        <div className="fixed top-24 right-8 z-[99999] animate-bounce">
+          <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 shadow-2xl max-w-sm border-4 border-white dark:border-slate-800">
+            <div className="flex items-center space-x-4">
+              <div className="text-6xl animate-pulse">{newlyUnlockedAchievement.icon}</div>
+              <div className="flex-1">
+                <p className="text-white text-sm font-semibold mb-1">🎉 Achievement Unlocked!</p>
+                <h3 className="text-white text-xl font-bold mb-1">{newlyUnlockedAchievement.title}</h3>
+                <p className="text-white/90 text-sm">{newlyUnlockedAchievement.description}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAchievementPopup(false)}
+              className="mt-4 w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 rounded-lg transition-all"
+            >
+              Awesome! ✨
+            </button>
           </div>
         </div>
       )}
