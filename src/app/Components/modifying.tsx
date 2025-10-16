@@ -23,6 +23,127 @@ import {
 } from "lucide-react";
 import Image from 'next/image';
 
+// Beautiful brown square nodes neural network - slow, smooth animation
+const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: string }> = ({ 
+  size = 100, 
+  nodes = 9, 
+  className 
+}) => {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const NS = 'http://www.w3.org/2000/svg';
+    
+    const N = Math.max(6, Math.min(12, nodes));
+    const nodesData: { x: number; y: number; phase: number; speed: number }[] = [];
+    
+    // Create grid-like initial positions for more structured look
+    for (let i = 0; i < N; i++) {
+      nodesData.push({
+        x: size * (0.15 + Math.random() * 0.7),
+        y: size * (0.15 + Math.random() * 0.7),
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.2 + Math.random() * 0.3 // Slower speed for gentle movement
+      });
+    }
+
+    const group = document.createElementNS(NS, 'g');
+    svg.appendChild(group);
+
+    const squares: SVGRectElement[] = [];
+    const lines: SVGLineElement[] = [];
+
+    // Create brown square nodes
+    for (let i = 0; i < N; i++) {
+      const square = document.createElementNS(NS, 'rect');
+      const squareSize = 4;
+      square.setAttribute('x', String(nodesData[i].x - squareSize / 2));
+      square.setAttribute('y', String(nodesData[i].y - squareSize / 2));
+      square.setAttribute('width', String(squareSize));
+      square.setAttribute('height', String(squareSize));
+      square.setAttribute('fill', '#92400e'); // Brown color
+      square.setAttribute('fill-opacity', '0.7');
+      square.setAttribute('rx', '1'); // Slightly rounded corners
+      group.appendChild(square);
+      squares.push(square);
+    }
+
+    // Create connecting lines
+    const threshold = size * 0.4;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const a = nodesData[i];
+        const b = nodesData[j];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < threshold) {
+          const line = document.createElementNS(NS, 'line');
+          line.setAttribute('stroke', '#92400e'); // Brown color
+          line.setAttribute('stroke-width', '1');
+          line.setAttribute('stroke-opacity', '0.2');
+          line.setAttribute('data-i', String(i));
+          line.setAttribute('data-j', String(j));
+          group.appendChild(line);
+          lines.push(line);
+        }
+      }
+    }
+
+    let raf = 0;
+    const t0 = performance.now();
+
+    const animate = (t: number) => {
+      const elapsed = (t - t0) / 1000;
+      
+      // Slow, gentle movement
+      for (let i = 0; i < N; i++) {
+        const n = nodesData[i];
+        const amplitude = 3; // Small movement range
+        const nx = n.x + Math.sin(elapsed * n.speed + n.phase) * amplitude;
+        const ny = n.y + Math.cos(elapsed * (n.speed * 0.8) + n.phase) * amplitude;
+        
+        const squareSize = 4;
+        squares[i].setAttribute('x', String(nx - squareSize / 2));
+        squares[i].setAttribute('y', String(ny - squareSize / 2));
+      }
+
+      // Update connecting lines with fade based on distance
+      lines.forEach((line) => {
+        const iIdx = Number(line.getAttribute('data-i'));
+        const jIdx = Number(line.getAttribute('data-j'));
+        const xi = Number(squares[iIdx].getAttribute('x')) + 2; // Center of square
+        const yi = Number(squares[iIdx].getAttribute('y')) + 2;
+        const xj = Number(squares[jIdx].getAttribute('x')) + 2;
+        const yj = Number(squares[jIdx].getAttribute('y')) + 2;
+        
+        line.setAttribute('x1', String(xi));
+        line.setAttribute('y1', String(yi));
+        line.setAttribute('x2', String(xj));
+        line.setAttribute('y2', String(yj));
+        
+        const dist = Math.hypot(xi - xj, yi - yj);
+        const opacity = 0.15 * (1 - Math.min(dist / threshold, 1));
+        line.setAttribute('stroke-opacity', String(opacity));
+      });
+
+      raf = requestAnimationFrame(animate);
+    };
+
+    raf = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      if (svg.contains(group)) svg.removeChild(group);
+    };
+  }, [size, nodes]);
+
+  return (
+    <div className={className} style={{ width: size, height: size, pointerEvents: 'none' }} aria-hidden="true">
+      <svg ref={svgRef} width={size} height={size} viewBox={`0 0 ${size} ${size}`} />
+    </div>
+  );
+};
 
 
 // Define comprehensive emotion types and interfaces
@@ -1779,7 +1900,11 @@ useEffect(() => {
           <div className="space-y-6">
             <div className={`${theme.cardBg} backdrop-blur-xl rounded-2xl border ${theme.border} p-6 shadow-lg`}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-xl font-bold ${theme.textPrimary}`}>Live Emotion Analysis</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className={`text-xl font-bold ${theme.textPrimary}`}>Live Emotion Analysis</h2>
+                  {/* Beautiful brown square nodes neural network */}
+                  <NeuralNetwork size={90} nodes={9} />
+                </div>
                 <div className={`px-3 py-1 ${theme.statusBg} rounded-full border ${theme.border}`}>
                   <span className={`text-xs font-medium ${theme.statusText}`}>
                     {currentEmotion ? "DETECTED" : isCameraActive ? "ANALYZING" : "INACTIVE"}
