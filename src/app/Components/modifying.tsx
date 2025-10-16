@@ -19,7 +19,13 @@ import {
   Music,
   Brain,
   Target,
-  MicOff
+  MicOff,
+  Sun,
+  Moon,
+  Calendar,
+  TrendingUp,
+  Clock,
+  X
 } from "lucide-react";
 import Image from 'next/image';
 
@@ -198,7 +204,7 @@ const NeuralNetwork: React.FC<{
       if (svg.contains(defs)) svg.removeChild(defs);
       if (svg.contains(group)) svg.removeChild(group);
     };
-  }, [size, nodes, horizontal]);
+  }, [size, nodes, horizontal, color, lineColor]);
 
   return (
     <div className={className} style={{ width: size, height: size, pointerEvents: 'none' }} aria-hidden="true">
@@ -389,11 +395,23 @@ const musicTherapy = {
 }
 
 // Get emotion-based theme function
-const getEmotionTheme = (emotion: string) => {
+const getEmotionTheme = (emotion: string, darkMode: boolean = false) => {
   const emotionType = emotion.toLowerCase();
   
   if (emotionType.includes('sad')) {
-    return {
+    return darkMode ? {
+      name: 'Comfort',
+      bg: 'from-slate-900 via-blue-950 to-slate-900',
+      cardBg: 'bg-slate-800/90',
+      sidebarBg: 'bg-slate-800/80',
+      navBg: 'bg-slate-900/95',
+      textPrimary: 'text-slate-100',
+      textSecondary: 'text-blue-400',
+      accent: 'from-blue-500 to-cyan-600',
+      border: 'border-blue-900/50',
+      statusBg: 'bg-blue-950/50',
+      statusText: 'text-blue-300'
+    } : {
       name: 'Comfort',
       bg: 'from-blue-50 via-sky-50 to-cyan-50',
       cardBg: 'bg-white/90',
@@ -405,9 +423,21 @@ const getEmotionTheme = (emotion: string) => {
       border: 'border-blue-200',
       statusBg: 'bg-blue-100',
       statusText: 'text-blue-800'
-    }
+    };
   } else if (emotionType.includes('angry')) {
-    return {
+    return darkMode ? {
+      name: 'Calming',
+      bg: 'from-slate-900 via-rose-950 to-slate-900',
+      cardBg: 'bg-slate-800/90',
+      sidebarBg: 'bg-slate-800/80',
+      navBg: 'bg-slate-900/95',
+      textPrimary: 'text-slate-100',
+      textSecondary: 'text-rose-400',
+      accent: 'from-rose-500 to-pink-600',
+      border: 'border-rose-900/50',
+      statusBg: 'bg-rose-950/50',
+      statusText: 'text-rose-300'
+    } : {
       name: 'Calming',
       bg: 'from-rose-50 via-pink-50 to-red-50',
       cardBg: 'bg-white/90',
@@ -421,7 +451,19 @@ const getEmotionTheme = (emotion: string) => {
       statusText: 'text-rose-800'
     };
   } else if (emotionType.includes('happy')) {
-    return {
+    return darkMode ? {
+      name: 'Joyful',
+      bg: 'from-slate-900 via-amber-950 to-slate-900',
+      cardBg: 'bg-slate-800/90',
+      sidebarBg: 'bg-slate-800/80',
+      navBg: 'bg-slate-900/95',
+      textPrimary: 'text-slate-100',
+      textSecondary: 'text-amber-400',
+      accent: 'from-amber-500 to-orange-600',
+      border: 'border-amber-900/50',
+      statusBg: 'bg-amber-950/50',
+      statusText: 'text-amber-300'
+    } : {
       name: 'Joyful',
       bg: 'from-yellow-50 via-amber-50 to-orange-50',
       cardBg: 'bg-white/90',
@@ -435,7 +477,19 @@ const getEmotionTheme = (emotion: string) => {
       statusText: 'text-amber-800'
     };
   } else if (emotionType.includes('fear')) {
-    return {
+    return darkMode ? {
+      name: 'Secure',
+      bg: 'from-slate-900 via-purple-950 to-slate-900',
+      cardBg: 'bg-slate-800/90',
+      sidebarBg: 'bg-slate-800/80',
+      navBg: 'bg-slate-900/95',
+      textPrimary: 'text-slate-100',
+      textSecondary: 'text-purple-400',
+      accent: 'from-purple-500 to-violet-600',
+      border: 'border-purple-900/50',
+      statusBg: 'bg-purple-950/50',
+      statusText: 'text-purple-300'
+    } : {
       name: 'Secure',
       bg: 'from-purple-50 via-violet-50 to-indigo-50',
       cardBg: 'bg-white/90',
@@ -449,7 +503,19 @@ const getEmotionTheme = (emotion: string) => {
       statusText: 'text-purple-800'
     };
   } else {
-    return {
+    return darkMode ? {
+      name: 'Balanced',
+      bg: 'from-slate-900 via-slate-800 to-slate-900',
+      cardBg: 'bg-slate-800/90',
+      sidebarBg: 'bg-slate-800/80',
+      navBg: 'bg-slate-900/95',
+      textPrimary: 'text-slate-100',
+      textSecondary: 'text-slate-400',
+      accent: 'from-slate-500 to-gray-600',
+      border: 'border-slate-700/50',
+      statusBg: 'bg-slate-800/50',
+      statusText: 'text-slate-300'
+    } : {
       name: 'Balanced',
       bg: 'from-slate-50 via-gray-50 to-zinc-50',
       cardBg: 'bg-white/90',
@@ -653,6 +719,69 @@ const EnhancedEmotionAid = () => {
   const [detectionMode, setDetectionMode] = useState("face");
   const [currentEmotion, setCurrentEmotion] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Voice instruction states
+  const [showVoiceInstruction, setShowVoiceInstruction] = useState(false);
+  const [voiceCountdown, setVoiceCountdown] = useState(6);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  
+  // Dark mode state
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Emotion history tracking
+  type EmotionRecord = {
+    id: string;
+    emotion: Emotion;
+    confidence: number;
+    timestamp: number;
+    detectionMode: 'face' | 'voice' | 'both';
+  };
+
+  const [emotionHistory, setEmotionHistory] = useState<EmotionRecord[]>([]);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+
+  // Load dark mode preference and emotion history from localStorage
+  useEffect(() => {
+    try {
+      const savedDarkMode = localStorage.getItem('emotionAidDarkMode');
+      if (savedDarkMode !== null) {
+        setIsDarkMode(JSON.parse(savedDarkMode));
+      }
+
+      const savedHistory = localStorage.getItem('emotionAidHistory');
+      if (savedHistory !== null) {
+        setEmotionHistory(JSON.parse(savedHistory));
+      }
+    } catch (err) { void err; }
+  }, []);
+
+  // Save dark mode preference to localStorage
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    try {
+      localStorage.setItem('emotionAidDarkMode', JSON.stringify(newMode));
+    } catch (err) { void err; }
+  };
+
+  // Log emotion detection to history
+  const logEmotionToHistory = React.useCallback((emotion: Emotion, confidence: number, mode: 'face' | 'voice' | 'both') => {
+    const record: EmotionRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      emotion,
+      confidence,
+      timestamp: Date.now(),
+      detectionMode: mode
+    };
+
+    setEmotionHistory(prev => {
+      const updated = [record, ...prev].slice(0, 100); // Keep last 100 records
+      try {
+        localStorage.setItem('emotionAidHistory', JSON.stringify(updated));
+      } catch (err) { void err; }
+      return updated;
+    });
+  }, []);
 
   // Helper function to generate consistent avatar colors based on name
   const getAvatarColor = (name: string) => {
@@ -973,10 +1102,15 @@ const EnhancedEmotionAid = () => {
     // set top emotion and confidence
     const topKey = Object.entries(fused).reduce((best, cur) => cur[1] > best[1] ? cur : best, ['', -Infinity])[0];
     if (topKey) {
+      const conf = Math.round((fused[topKey] || 0) * 100);
       setCurrentEmotion(topKey);
-      setConfidence(Math.round((fused[topKey] || 0) * 100));
+      setConfidence(conf);
+      
+      // Log to history - determine detection mode
+      const mode: 'face' | 'voice' | 'both' = (face && audio) ? 'both' : face ? 'face' : 'voice';
+      logEmotionToHistory(topKey as Emotion, conf, mode);
     }
-  }, []);
+  }, [logEmotionToHistory]);
 
   // Description state for user problem
   const [userDescription, setUserDescription] = useState("");
@@ -1031,8 +1165,8 @@ const EnhancedEmotionAid = () => {
   const cameraTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [, setStrategyData] = useState<Record<string, unknown>>({});
   
-  // Get the theme - only if emotion is detected
-  const theme = currentEmotion ? getEmotionTheme(currentEmotion) : getEmotionTheme("neutral");
+  // Get the theme - only if emotion is detected, with dark mode support
+  const theme = currentEmotion ? getEmotionTheme(currentEmotion, isDarkMode) : getEmotionTheme("neutral", isDarkMode);
 
   // cleaned emotion for UI/YouTube mapping
   const cleanEmotionForUI = currentEmotion ? currentEmotion.replace(/[^\w]/g, '') as Emotion : 'Neutral' as Emotion;
@@ -1276,12 +1410,13 @@ const recordAndSendAudio = React.useCallback(async () => {
     recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) audioChunksRef.current.push(ev.data); };
     recorder.start();
 
-    // stop after 2 seconds
+    // Record for 6 seconds to capture enough audio for MFCC Mel spectrum analysis
     setTimeout(async () => {
       try {
         recorder.stop();
+        setIsRecordingVoice(false);
       } catch (err) { void err; }
-    }, 2000);
+    }, 6000);
 
     recorder.onstop = async () => {
       try {
@@ -1311,6 +1446,28 @@ const recordAndSendAudio = React.useCallback(async () => {
     };
   } catch (err) { console.warn('Audio capture failed', err); }
 }, [facePredictions, computeAndSetFusion, normalizeLabel]);
+
+// Voice instruction countdown and recording trigger
+useEffect(() => {
+  if (!showVoiceInstruction) return;
+
+  const countdownInterval = setInterval(() => {
+    setVoiceCountdown((prev) => {
+      if (prev <= 1) {
+        clearInterval(countdownInterval);
+        // Start recording after countdown
+        setIsRecordingVoice(true);
+        setShowVoiceInstruction(false);
+        // Trigger audio recording
+        recordAndSendAudio();
+        return 6;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(countdownInterval);
+}, [showVoiceInstruction, recordAndSendAudio]);
 
 useEffect(() => {
   const fetchStrategyData = async () => {
@@ -1438,7 +1595,7 @@ useEffect(() => {
       }
     })();
   }
-}, [currentEmotion, userDescription, crewAISolutionFetched, profile?.name]);
+}, [currentEmotion, userDescription, crewAISolutionFetched, profile?.name, profile?.email, profile?.gender, profile?.ageGroup, profile?.age_group, profile?.age]);
 
 // Trigger a 6-second stability timer for negative emotions to show immediate popup
 const fetchImmediateSolutions = React.useCallback(async (cleanEmotion: Emotion) => {
@@ -1740,6 +1897,19 @@ useEffect(() => {
               <span className={`text-sm font-bold ${theme.textPrimary}`} style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif' }}>{confidence}%</span>
             </div>
 
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className={`flex items-center justify-center w-10 h-10 ${theme.statusBg} rounded-lg border ${theme.border} hover:scale-105 transition-all duration-200`}
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? (
+                <Sun className={`w-5 h-5 ${theme.textSecondary}`} />
+              ) : (
+                <Moon className={`w-5 h-5 ${theme.textSecondary}`} />
+              )}
+            </button>
+
             <div className="relative">
               <button
                 ref={notificationsButtonRef}
@@ -1767,15 +1937,15 @@ useEffect(() => {
                   <div className="max-h-56 overflow-y-auto space-y-2 pr-2">
                     {notifications.length === 0 && <div className={`text-sm ${theme.textSecondary}`}>No notifications</div>}
                     {notifications.map(n => (
-                      <div key={n.id} className={`p-3 rounded-lg border ${theme.border} ${n.read ? 'bg-transparent' : 'bg-blue-50'}`}>
+                      <div key={n.id} className={`p-3 rounded-lg border ${theme.border} ${n.read ? 'bg-transparent' : isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1 pr-3">
                             <div className={`text-sm font-semibold ${theme.textPrimary}`}>{n.title}</div>
                             {n.message && <div className={`text-xs mt-1 ${theme.textSecondary}`}>{n.message}</div>}
                           </div>
-                          <div className="text-xs text-slate-400 ml-2 whitespace-nowrap">{new Date(n.time).toLocaleTimeString()}</div>
+                          <div className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'} ml-2 whitespace-nowrap`}>{new Date(n.time).toLocaleTimeString()}</div>
                         </div>
-                        {!n.read && <div className="mt-2 text-right"><button onClick={() => markNotificationRead(n.id)} className="text-xs text-blue-600">Mark read</button></div>}
+                        {!n.read && <div className="mt-2 text-right"><button onClick={() => markNotificationRead(n.id)} className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Mark read</button></div>}
                       </div>
                     ))}
                   </div>
@@ -1930,15 +2100,22 @@ useEffect(() => {
               {menuItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveMenu(item.id)}
+                  onClick={() => {
+                    if (item.id === 'history') {
+                      setShowHistoryPanel(true);
+                    } else {
+                      setActiveMenu(item.id);
+                      setShowHistoryPanel(false);
+                    }
+                  }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    activeMenu === item.id
+                    activeMenu === item.id || (item.id === 'history' && showHistoryPanel)
                       ? `${theme.statusBg} ${theme.textSecondary} border ${theme.border}`
                       : `${theme.textPrimary} hover:${theme.statusBg} hover:${theme.textSecondary}`
                   }`}
                   style={{ userSelect: 'none' }}
                 >
-                  <div className={activeMenu === item.id ? theme.textSecondary : "text-slate-500"}>
+                  <div className={activeMenu === item.id || (item.id === 'history' && showHistoryPanel) ? theme.textSecondary : "text-slate-500"}>
                     {item.icon}
                   </div>
                   <span style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif', userSelect: 'none' }}>{item.label}</span>
@@ -2000,7 +2177,19 @@ useEffect(() => {
 
               {(detectionMode === "voice" || detectionMode === "both") && (
                 <button
-                  onClick={() => setIsMicActive(!isMicActive)}
+                  onClick={() => {
+                    if (!isMicActive) {
+                      // Show voice instruction when turning mic on
+                      setShowVoiceInstruction(true);
+                      setVoiceCountdown(6);
+                      setIsMicActive(true);
+                    } else {
+                      // Turn off mic
+                      setIsMicActive(false);
+                      setShowVoiceInstruction(false);
+                      setIsRecordingVoice(false);
+                    }
+                  }}
                   className={`w-full flex items-center justify-center space-x-3 py-3 rounded-xl font-medium transition-all duration-300 ${
                     isMicActive
                       ? `bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg border border-emerald-400`
@@ -2557,6 +2746,192 @@ useEffect(() => {
               <button onClick={() => setShowCrewAIPopup(false)} className="px-3 py-2 rounded-md text-sm border">Close</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Emotion History Panel - Sliding from right */}
+      {showHistoryPanel && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90000] flex items-center justify-end" onClick={() => setShowHistoryPanel(false)}>
+          <div 
+            className={`w-full max-w-2xl h-full ${theme.cardBg} shadow-2xl overflow-y-auto animate-slide-in-right`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className={`sticky top-0 ${theme.navBg} backdrop-blur-xl border-b ${theme.border} p-6 flex items-center justify-between z-10`}>
+              <div className="flex items-center space-x-3">
+                <div className={`w-10 h-10 bg-gradient-to-br ${theme.accent} rounded-xl flex items-center justify-center`}>
+                  <History className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className={`text-2xl font-bold ${theme.textPrimary}`}>Emotion History</h2>
+                  <p className={`text-sm ${theme.textSecondary}`}>{emotionHistory.length} records tracked</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowHistoryPanel(false)}
+                className={`w-10 h-10 ${theme.statusBg} rounded-xl flex items-center justify-center hover:scale-105 transition-all`}
+              >
+                <X className={`w-5 h-5 ${theme.textSecondary}`} />
+              </button>
+            </div>
+
+            {/* Stats Overview */}
+            <div className="p-6 space-y-6">
+              {emotionHistory.length === 0 ? (
+                <div className={`text-center py-12 ${theme.textSecondary}`}>
+                  <History className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-semibold">No emotion history yet</p>
+                  <p className="text-sm mt-2">Start detecting emotions to see your timeline</p>
+                </div>
+              ) : (
+                <>
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className={`${theme.statusBg} rounded-xl p-4 border ${theme.border}`}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <TrendingUp className={`w-4 h-4 ${theme.textSecondary}`} />
+                        <span className={`text-xs font-semibold ${theme.textSecondary}`}>Most Frequent</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${theme.textPrimary}`}>
+                        {(() => {
+                          const counts: Record<string, number> = {};
+                          emotionHistory.forEach(r => counts[r.emotion] = (counts[r.emotion] || 0) + 1);
+                          const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                          return top ? top[0] : '-';
+                        })()}
+                      </p>
+                    </div>
+
+                    <div className={`${theme.statusBg} rounded-xl p-4 border ${theme.border}`}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Clock className={`w-4 h-4 ${theme.textSecondary}`} />
+                        <span className={`text-xs font-semibold ${theme.textSecondary}`}>Last 24h</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${theme.textPrimary}`}>
+                        {emotionHistory.filter(r => Date.now() - r.timestamp < 24 * 60 * 60 * 1000).length}
+                      </p>
+                    </div>
+
+                    <div className={`${theme.statusBg} rounded-xl p-4 border ${theme.border}`}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Calendar className={`w-4 h-4 ${theme.textSecondary}`} />
+                        <span className={`text-xs font-semibold ${theme.textSecondary}`}>Avg Confidence</span>
+                      </div>
+                      <p className={`text-2xl font-bold ${theme.textPrimary}`}>
+                        {Math.round(emotionHistory.reduce((sum, r) => sum + r.confidence, 0) / emotionHistory.length)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Emotion Distribution Chart */}
+                  <div className={`${theme.cardBg} rounded-xl p-6 border ${theme.border}`}>
+                    <h3 className={`text-lg font-bold ${theme.textPrimary} mb-4 flex items-center`}>
+                      <BarChart3 className={`w-5 h-5 mr-2 ${theme.textSecondary}`} />
+                      Emotion Distribution
+                    </h3>
+                    <div className="space-y-3">
+                      {(() => {
+                        const counts: Record<string, number> = {};
+                        emotionHistory.forEach(r => counts[r.emotion] = (counts[r.emotion] || 0) + 1);
+                        const total = emotionHistory.length;
+                        return Object.entries(counts)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([emotion, count]) => {
+                            const percentage = Math.round((count / total) * 100);
+                            const emotionColors: Record<string, string> = {
+                              Happy: 'bg-amber-500',
+                              Sad: 'bg-blue-500',
+                              Angry: 'bg-rose-500',
+                              Fearful: 'bg-purple-500',
+                              Surprised: 'bg-pink-500',
+                              Disgusted: 'bg-green-500',
+                              Neutral: 'bg-slate-500'
+                            };
+                            return (
+                              <div key={emotion} className="space-y-1">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className={`font-medium ${theme.textPrimary}`}>{emotion}</span>
+                                  <span className={`${theme.textSecondary}`}>{count} times ({percentage}%)</span>
+                                </div>
+                                <div className={`w-full h-2 ${theme.statusBg} rounded-full overflow-hidden`}>
+                                  <div 
+                                    className={`h-full ${emotionColors[emotion] || 'bg-slate-400'} transition-all duration-500`}
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          });
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className={`${theme.cardBg} rounded-xl p-6 border ${theme.border}`}>
+                    <h3 className={`text-lg font-bold ${theme.textPrimary} mb-4 flex items-center`}>
+                      <Clock className={`w-5 h-5 mr-2 ${theme.textSecondary}`} />
+                      Recent Timeline
+                    </h3>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {emotionHistory.slice(0, 50).map((record, idx) => {
+                        const emotionEmojis: Record<string, string> = {
+                          Happy: '😊', Sad: '😢', Angry: '😠', Fearful: '😨',
+                          Surprised: '😲', Disgusted: '🤢', Neutral: '😐'
+                        };
+                        const modeIcons: Record<string, React.ReactNode> = {
+                          face: <Camera className="w-3 h-3" />,
+                          voice: <Mic className="w-3 h-3" />,
+                          both: <Zap className="w-3 h-3" />
+                        };
+                        return (
+                          <div key={record.id} className={`flex items-center space-x-4 p-3 rounded-lg ${idx === 0 ? `${theme.statusBg} border ${theme.border}` : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                            <div className="text-3xl">{emotionEmojis[record.emotion]}</div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className={`font-semibold ${theme.textPrimary}`}>{record.emotion}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${theme.statusBg} ${theme.textSecondary} flex items-center space-x-1`}>
+                                  {modeIcons[record.detectionMode]}
+                                  <span>{record.detectionMode}</span>
+                                </span>
+                              </div>
+                              <div className={`text-xs ${theme.textSecondary} mt-1`}>
+                                {new Date(record.timestamp).toLocaleString()} • {record.confidence}% confidence
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voice Instruction Overlay */}
+      {showVoiceInstruction && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100000]">
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-12 shadow-2xl max-w-md text-center transform animate-pulse">
+            <div className="mb-6">
+              <Mic className="w-20 h-20 text-white mx-auto mb-4 animate-bounce" />
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-4">Get Ready!</h2>
+            <p className="text-xl text-white/90 mb-6 leading-relaxed px-4">
+              Please say: <span className="font-bold">&quot;I am feeling different emotions today and would like to understand them better&quot;</span>
+            </p>
+            <div className="text-7xl font-bold text-white mb-4">{voiceCountdown}</div>
+            <p className="text-lg text-white/80">Recording will start automatically...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Recording Indicator */}
+      {isRecordingVoice && (
+        <div className="fixed top-24 right-8 bg-red-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-3 z-[99999] animate-pulse">
+          <div className="w-3 h-3 bg-white rounded-full animate-ping"></div>
+          <span className="font-bold">Recording Voice... (6s)</span>
         </div>
       )}
 
