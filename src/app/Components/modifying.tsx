@@ -24,11 +24,20 @@ import {
 import Image from 'next/image';
 
 // Beautiful brown square nodes neural network - horizontal left-to-right animation
-const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: string; horizontal?: boolean }> = ({ 
+const NeuralNetwork: React.FC<{ 
+  size?: number; 
+  nodes?: number; 
+  className?: string; 
+  horizontal?: boolean;
+  color?: string;
+  lineColor?: string;
+}> = ({ 
   size = 100, 
   nodes = 9, 
   className,
-  horizontal = false
+  horizontal = false,
+  color = '#14b8a6',
+  lineColor = '#5eead4'
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -93,7 +102,7 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
       square.setAttribute('y', String(nodesData[i].y - squareSize / 2));
       square.setAttribute('width', String(squareSize));
       square.setAttribute('height', String(squareSize));
-      square.setAttribute('fill', '#14b8a6'); // Soft teal - eye-friendly
+      square.setAttribute('fill', color); // Use prop color
       square.setAttribute('fill-opacity', '0.7');
       square.setAttribute('rx', '1.5');
       square.setAttribute('filter', `url(#${filterId})`);
@@ -111,7 +120,7 @@ const NeuralNetwork: React.FC<{ size?: number; nodes?: number; className?: strin
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (d < threshold) {
           const line = document.createElementNS(NS, 'line');
-          line.setAttribute('stroke', '#5eead4'); // Lighter teal for lines
+          line.setAttribute('stroke', lineColor); // Use prop lineColor
           line.setAttribute('stroke-width', '1');
           line.setAttribute('stroke-opacity', '0');
           line.setAttribute('stroke-linecap', 'round');
@@ -645,8 +654,26 @@ const EnhancedEmotionAid = () => {
   const [currentEmotion, setCurrentEmotion] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Helper function to generate consistent avatar colors based on name
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      'from-blue-500 to-blue-600',
+      'from-purple-500 to-purple-600',
+      'from-pink-500 to-pink-600',
+      'from-green-500 to-green-600',
+      'from-yellow-500 to-yellow-600',
+      'from-red-500 to-red-600',
+      'from-indigo-500 to-indigo-600',
+      'from-teal-500 to-teal-600',
+      'from-orange-500 to-orange-600',
+      'from-cyan-500 to-cyan-600',
+    ];
+    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+
   // profile for user avatar
-  const [profile, setProfile] = useState<{ name: string; gender: string; photoDataUrl?: string | null; age_group?: string; age?: number } | null>(null);
+  const [profile, setProfile] = useState<{ name: string; email?: string; gender: string; photoDataUrl?: string | null; age_group?: string; ageGroup?: string; age?: number } | null>(null);
   const [agePredicting, setAgePredicting] = useState(false);
   useEffect(() => {
     try {
@@ -1661,9 +1688,32 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Center - Neural Network Animation flowing left to right */}
-        <div className="flex-1 flex justify-center items-center px-8">
-          <NeuralNetwork size={180} nodes={8} horizontal={true} />
+        {/* Center - Three Neural Network Animations with different colors */}
+        <div className="flex-1 flex justify-center items-center gap-4 px-8">
+          {/* Gray Animation */}
+          <NeuralNetwork 
+            size={140} 
+            nodes={10} 
+            horizontal={true} 
+            color="#6b7280" 
+            lineColor="#9ca3af"
+          />
+          {/* Red Animation */}
+          <NeuralNetwork 
+            size={140} 
+            nodes={10} 
+            horizontal={true} 
+            color="#ef4444" 
+            lineColor="#fca5a5"
+          />
+          {/* Yellow Animation */}
+          <NeuralNetwork 
+            size={140} 
+            nodes={10} 
+            horizontal={true} 
+            color="#eab308" 
+            lineColor="#fde047"
+          />
         </div>
 
         <div className="flex items-center space-x-4">
@@ -1727,12 +1777,12 @@ useEffect(() => {
             <div
               ref={avatarRef}
               onClick={() => setIsProfileMenuOpen(s => !s)}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-md ${profile?.photoDataUrl ? 'overflow-hidden' : 'bg-gradient-to-br ' + theme.accent}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform shadow-md ${profile?.photoDataUrl ? 'overflow-hidden' : `bg-gradient-to-br ${profile?.name ? getAvatarColor(profile.name) : theme.accent}`}`}
             >
               {profile?.photoDataUrl ? (
-                <Image src={profile.photoDataUrl} alt="avatar" width={40} height={40} className="object-cover w-10 h-10" />
+                <Image src={profile.photoDataUrl} alt="avatar" width={40} height={40} className="object-cover w-10 h-10 rounded-full" />
               ) : profile?.name ? (
-                <div className="w-10 h-10 flex items-center justify-center bg-white/6 rounded-lg text-sm font-medium text-white">{profile.name.charAt(0).toUpperCase()}</div>
+                <div className="text-lg font-bold text-white">{profile.name.charAt(0).toUpperCase()}</div>
               ) : (
                 <User className="w-5 h-5 text-white" />
               )}
@@ -1748,15 +1798,23 @@ useEffect(() => {
                   <>
                     <div className="flex items-center space-x-3 mb-3">
                       {profile?.photoDataUrl ? (
-                        <Image src={profile.photoDataUrl} alt="avatar" width={40} height={40} className="rounded-md object-cover" />
+                        <Image src={profile.photoDataUrl} alt="avatar" width={48} height={48} className="rounded-full object-cover w-12 h-12" />
                       ) : (
-                        <div className="w-10 h-10 rounded-md bg-slate-200 flex items-center justify-center text-sm font-medium">{profile?.name?.charAt(0).toUpperCase() || 'U'}</div>
+                        <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${profile?.name ? getAvatarColor(profile.name) : 'from-slate-400 to-slate-500'} flex items-center justify-center text-lg font-bold text-white shadow-md`}>
+                          {profile?.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
                       )}
                       <div>
                         <div className="text-sm font-semibold text-slate-800">{profile?.name || 'Unknown'}</div>
-                        <div className="text-xs text-slate-500">{profile?.gender || 'Not specified'}{(profile?.age_group || profile?.age) ? (
-                          <span className="text-xs text-slate-400"> &middot; {profile?.age_group ? profile.age_group : `Age ${Math.round(profile.age as number)}`}</span>
-                        ) : null}</div>
+                        <div className="text-xs text-slate-500">
+                          {profile?.email && <div>{profile.email}</div>}
+                          <div>
+                            {profile?.gender || 'Not specified'}
+                            {(profile?.ageGroup || profile?.age_group || profile?.age) ? (
+                              <span className="text-xs text-slate-400"> &middot; {profile?.ageGroup || profile?.age_group || `Age ${Math.round(profile.age as number)}`}</span>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
                     </div>
 

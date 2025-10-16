@@ -3,11 +3,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-type Gender = "Male" | "Female" | "Other";
+type Gender = "Male" | "Female" | "Other" | "";
+type AgeGroup = "Child (0-12)" | "Teenager (13-17)" | "Young Adult (18-30)" | "Adult (30-40)" | "Middle-aged (41-60)" | "Senior (60+)";
 
 interface Profile {
   name: string;
+  email: string;
   gender: Gender;
+  ageGroup: AgeGroup;
   photoDataUrl?: string | null;
 }
 
@@ -15,15 +18,24 @@ const STORAGE_KEY = "emotionAidUser";
 
 const Auth: React.FC = () => {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [gender, setGender] = useState<Gender>("Other");
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [ageGroup, setAgeGroup] = useState<AgeGroup>("Adult (30-40)");
   const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
   // inline custom dropdown state to avoid native select overlay issues
   const [isGenderOpen, setIsGenderOpen] = useState(false);
+  const [isAgeGroupOpen, setIsAgeGroupOpen] = useState(false);
   const genderWrapperRef = useRef<HTMLDivElement | null>(null);
+  const ageGroupWrapperRef = useRef<HTMLDivElement | null>(null);
   const genders: Gender[] = ["Male", "Female", "Other"];
+  const ageGroups: AgeGroup[] = [
+    "Child (0-12)",
+    "Teenager (13-17)",
+    "Young Adult (18-30)",
+    "Adult (30-40)",
+    "Middle-aged (41-60)",
+    "Senior (60+)"
+  ];
 
   useEffect(() => {
     // load existing profile from localStorage
@@ -44,76 +56,13 @@ const Auth: React.FC = () => {
       if (genderWrapperRef.current && !genderWrapperRef.current.contains(e.target as Node)) {
         setIsGenderOpen(false);
       }
+      if (ageGroupWrapperRef.current && !ageGroupWrapperRef.current.contains(e.target as Node)) {
+        setIsAgeGroupOpen(false);
+      }
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
-
-  useEffect(() => {
-    if (!photoFile) {
-      setPhotoPreview(null);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => setPhotoPreview(reader.result as string);
-    reader.readAsDataURL(photoFile);
-    return () => {
-      reader.onload = null;
-    };
-  }, [photoFile]);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files && e.target.files[0];
-    if (f) setPhotoFile(f);
-  };
-
-  // Compress image file to a smaller data URL to avoid exceeding localStorage quota
-  const compressImage = (file: File, maxDim = 256, quality = 0.75): Promise<string | null> => {
-    return new Promise((resolve) => {
-      try {
-        const img = new window.Image();
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result !== 'string') return resolve(null);
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              let { width, height } = img;
-              if (width > height) {
-                if (width > maxDim) {
-                  height = Math.round((height *= maxDim / width));
-                  width = maxDim;
-                }
-              } else {
-                if (height > maxDim) {
-                  width = Math.round((width *= maxDim / height));
-                  height = maxDim;
-                }
-              }
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              if (!ctx) return resolve(null);
-              ctx.drawImage(img, 0, 0, width, height);
-              const dataUrl = canvas.toDataURL('image/jpeg', quality);
-              resolve(dataUrl);
-            } catch (err) {
-              console.warn('Image compression failed', err);
-              resolve(null);
-            }
-          };
-          img.onerror = () => resolve(null);
-          img.src = reader.result as string;
-        };
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(file);
-      } catch (err) {
-        console.warn('compressImage error', err);
-        resolve(null);
-      }
-    });
-  };
 
   const router = useRouter();
 
@@ -122,29 +71,25 @@ const Auth: React.FC = () => {
       alert("Please enter your name.");
       return;
     }
-
-    // compress image to reduce size before storing in localStorage
-    let dataUrl: string | null = null;
-    if (photoFile) {
-      dataUrl = await compressImage(photoFile, 256, 0.75);
-      // fallback to raw dataURL if compression failed but try to avoid large values
-      if (!dataUrl) {
-        try {
-          const r = await new Promise<string | null>((res) => {
-            const fr = new FileReader();
-            fr.onload = () => res(fr.result as string);
-            fr.onerror = () => res(null);
-            fr.readAsDataURL(photoFile);
-          });
-          dataUrl = r;
-        } catch { dataUrl = null; }
-      }
+    
+    if (!email.trim()) {
+      alert("Please enter your email.");
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      alert("Please enter a valid email address.");
+      return;
     }
 
     const profile: Profile = {
       name: name.trim(),
+      email: email.trim(),
       gender,
-      photoDataUrl: dataUrl,
+      ageGroup,
+      photoDataUrl: null,
     };
 
     try {
@@ -186,7 +131,12 @@ const Auth: React.FC = () => {
       fetch("http://127.0.0.1:5000/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: profile.name, gender: profile.gender }),
+        body: JSON.stringify({ 
+          name: profile.name, 
+          email: profile.email,
+          gender: profile.gender,
+          ageGroup: profile.ageGroup
+        }),
       }).catch(() => {});
     } catch (err) {
       void err;
@@ -197,10 +147,9 @@ const Auth: React.FC = () => {
     localStorage.removeItem(STORAGE_KEY);
     setSavedProfile(null);
     setName("");
+    setEmail("");
     setGender("Other");
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    if (inputRef.current) inputRef.current.value = "";
+    setAgeGroup("Adult (30-40)");
   };
 
   if (savedProfile) {
@@ -208,9 +157,9 @@ const Auth: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center" style={{
         background: 'radial-gradient( circle at 10% 10%, rgba(6,182,212,0.06) 0%, rgba(0,0,0,0.6) 25%, rgba(58,36,64,0.6) 60% )',
       }}>
-        <div className="w-full max-w-md px-6">
-          <div className="mb-6 flex items-center justify-between text-white/80">
-            <div className="flex items-center space-x-3">
+        <div className="w-full max-w-md px-2">
+          <div className="mb-1 flex items-center justify-between text-white/80">
+            <div className="flex items-center space-x-3 ">
               <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold">EA</div>
               <div>
                 <div className="text-lg font-semibold">EmotionAid</div>
@@ -231,7 +180,8 @@ const Auth: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-white">{savedProfile.name}</h3>
-                <p className="text-sm text-white/80">{savedProfile.gender}</p>
+                <p className="text-sm text-white/80">{savedProfile.email}</p>
+                <p className="text-xs text-white/60">{savedProfile.gender} • {savedProfile.ageGroup}</p>
               </div>
               <div>
                 <button onClick={handleLogout} className="px-4 py-2 bg-rose-600 text-white rounded-xl shadow">Log out</button>
@@ -248,7 +198,7 @@ const Auth: React.FC = () => {
       background: 'radial-gradient( circle at 80% 20%, rgba(12,92,70,0.12) 0%, rgba(9,16,34,0.8) 30%, rgba(58,36,64,0.9) 70% )',
     }}>
       <div className="w-full max-w-md px-6">
-        <div className="mb-6 flex items-center justify-between text-white/80">
+        <div className="mx-6 flex items-center justify-between text-white/80">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold">EA</div>
             <div>
@@ -276,12 +226,21 @@ const Auth: React.FC = () => {
             placeholder="Your name"
           />
 
+          <label className="block text-sm font-semibold text-white/90">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 mt-1 mb-4 rounded-xl bg-white/6 border border-white/10 text-white placeholder:text-white/50"
+            placeholder="your.email@example.com"
+          />
+
           <label className="block text-sm font-semibold text-white/90">Gender</label>
           <div ref={genderWrapperRef} className="mt-1 mb-4">
             <button
               type="button"
               onClick={() => setIsGenderOpen(s => !s)}
-              className="w-full p-3 rounded-xl border border-white/10 text-left text-white flex items-center justify-between"
+              className="w-full p-3 rounded-xl border border-white/10 text-left text-white flex items-center justify-between bg-white/6"
             >
               <span className="text-sm">{gender}</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
@@ -302,34 +261,43 @@ const Auth: React.FC = () => {
             )}
           </div>
 
-          <label className="block text-sm font-semibold text-white/90">Photo (please upload a photo with your clear face)</label>
-          <div className="relative mt-1 mb-4">
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="w-full p-3 rounded-xl border border-white/10 text-white bg-transparent placeholder:text-white/50"
-            />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/70">
+          <label className="block text-sm font-semibold text-white/90">Age Group</label>
+          <div ref={ageGroupWrapperRef} className="mt-1 mb-4">
+            <button
+              type="button"
+              onClick={() => setIsAgeGroupOpen(s => !s)}
+              className="w-full p-3 rounded-xl border border-white/10 text-left text-white flex items-center justify-between bg-white/6"
+            >
+              <span className="text-sm">{ageGroup}</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
                 <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </span>
-          </div>
+            </button>
 
-          {photoPreview && (
-            <div className="mb-4">
-              <Image src={photoPreview} alt="preview" className="w-28 h-28 rounded-full object-cover border border-white/10" width={112} height={112} />
-            </div>
-          )}
+            {isAgeGroupOpen && (
+              <div className="mt-2 bg-slate-900 border border-white/10 rounded-xl shadow-inner py-1 max-h-48 overflow-auto">
+                {ageGroups.map(ag => (
+                  <div
+                    key={ag}
+                    onClick={() => { setAgeGroup(ag); setIsAgeGroupOpen(false); }}
+                    className={`px-4 py-2 text-sm text-white hover:bg-slate-800 cursor-pointer ${ageGroup === ag ? 'bg-slate-800 font-semibold' : ''}`}
+                  >{ag}</div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex space-x-3">
             <button onClick={handleSave} className="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl shadow">Save</button>
-            <button onClick={() => { setName(''); setGender('Other'); setPhotoFile(null); setPhotoPreview(null); if (inputRef.current) inputRef.current.value = ''; }} className="px-4 py-3 bg-white/6 text-white rounded-2xl border border-white/10">Clear</button>
+            <button onClick={() => { 
+              setName(''); 
+              setEmail('');
+              setGender('Other'); 
+              setAgeGroup('Adult (30-40)');
+            }} className="px-4 py-3 bg-white/6 text-white rounded-2xl border border-white/10">Clear</button>
           </div>
 
-          <p className="text-xs text-white/60 mt-4">Profile is stored locally in your browser. Server-side persistence is optional; enable `/users` endpoint to store profiles on the server.</p>
+         
         </div>
       </div>
     </div>
