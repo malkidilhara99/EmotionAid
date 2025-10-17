@@ -4318,12 +4318,12 @@ useEffect(() => {
 
                   {/* International Resources */}
                   <div className="border-t border-white/20 pt-4 mt-4">
-                    <h3 className="text-base font-bold text-white mb-2">�🇰 Additional Sri Lanka Resources</h3>
+                    <h3 className="text-base font-bold text-white mb-2">Additional Sri Lanka Resources</h3>
                     <div className="text-white/90 space-y-1 text-xs">
-                      <p>� National Hospital: 011-269-1111</p>
-                      <p>💚 Shanthi Maargam: 0714-444-444</p>
-                      <p>🧠 SLCPMH Hotline: 011-216-8073</p>
-                      <p>👨‍👩‍👧 Family Planning: 011-555-5678</p>
+                      <p> National Hospital: 011-269-1111</p>
+                      <p> Shanthi Maargam: 0714-444-444</p>
+                      <p> SLCPMH Hotline: 011-216-8073</p>
+                      <p> Family Planning: 011-555-5678</p>
                       <p className="mt-2 text-[10px] text-white/70">Available 24/7 for mental health support</p>
                     </div>
                   </div>
