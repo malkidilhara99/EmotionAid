@@ -1653,10 +1653,41 @@ const startCamera = async () => {
       videoRef.current.srcObject = null;
     }
 
-    // Request new stream
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-    });
+        // Request new stream with ENHANCED QUALITY settings for clear face detection
+    const constraints: MediaStreamConstraints = {
+      video: {
+        facingMode: 'user',
+        
+        // 📹 HIGH RESOLUTION for clearer face features
+        width: { ideal: 1280, min: 640 },
+        height: { ideal: 720, min: 480 },
+        
+        // 🎬 SMOOTH FRAMERATE for real-time emotion capture
+        frameRate: { ideal: 30, min: 15 },
+        
+        // 🎨 ASPECT RATIO (16:9 for most webcams)
+        aspectRatio: { ideal: 1.7777777778 }
+        
+        // Advanced camera features removed from type-checked object
+      }
+    };
+    
+    // Add experimental camera features via type assertion
+    // Create a custom interface for advanced video constraints
+    interface AdvancedVideoConstraints extends MediaTrackConstraints {
+      focusMode?: string;
+      exposureMode?: string;
+      whiteBalanceMode?: string;
+    }
+    
+    // Cast to our custom interface that includes experimental properties
+    const videoConstraints = constraints.video as AdvancedVideoConstraints;
+    // These help get sharper, clearer face images if browser supports them
+    videoConstraints.focusMode = 'continuous';      // Auto-focus on face
+    videoConstraints.exposureMode = 'continuous';   // Auto-adjust brightness
+    videoConstraints.whiteBalanceMode = 'continuous'; // Auto-adjust color temperature
+    
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
     console.log("[CAMERA] Stream acquired ✅");
 
@@ -1778,18 +1809,40 @@ const captureAndSendFrame = React.useCallback(async () => {
   if (!videoRef.current) return;
 
   const canvas = document.createElement("canvas");
+  // Use actual video dimensions (will be higher res with new settings: 1280x720)
   canvas.width = videoRef.current.videoWidth || 640;
   canvas.height = videoRef.current.videoHeight || 480;
   const context = canvas.getContext("2d");
   if (!context) return;
 
+  // Draw video frame to canvas
   context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
+  // 🎨 ENHANCE IMAGE QUALITY for clearer facial features
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  
+  // Apply contrast boost (20%) and slight brightness increase
+  const contrastFactor = 1.2;  // 20% more contrast makes features sharper
+  const brightnessFactor = 10;  // +10 brightness helps with dim lighting
+  
+  for (let i = 0; i < data.length; i += 4) {
+    // Apply contrast: shift around midpoint (128)
+    data[i] = Math.min(255, Math.max(0, contrastFactor * (data[i] - 128) + 128 + brightnessFactor));       // Red
+    data[i+1] = Math.min(255, Math.max(0, contrastFactor * (data[i+1] - 128) + 128 + brightnessFactor));   // Green
+    data[i+2] = Math.min(255, Math.max(0, contrastFactor * (data[i+2] - 128) + 128 + brightnessFactor));   // Blue
+    // Alpha channel (i+3) stays unchanged
+  }
+  
+  // Put enhanced image back
+  context.putImageData(imageData, 0, 0);
+
+  // Use PNG for better quality (no JPEG compression artifacts on face)
   canvas.toBlob(async (blob) => {
     if (blob) {
       await handleImageUpload(blob);
     }
-  }, "image/jpeg");
+  }, "image/png", 0.95);  // High quality PNG
 }, [videoRef, handleImageUpload]);
 
 // Record a short audio clip (2s) and send to backend predict_audio endpoint
