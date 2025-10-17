@@ -818,6 +818,7 @@ const EnhancedEmotionAid = () => {
   };
 
   const [showDiaryPanel, setShowDiaryPanel] = useState(false);
+  const [showAnalyticsPanel, setShowAnalyticsPanel] = useState(false);
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [isDiaryLocked, setIsDiaryLocked] = useState(true);
   const [diaryPassword, setDiaryPassword] = useState('');
@@ -833,7 +834,6 @@ const EnhancedEmotionAid = () => {
   const [showBreathingCoach, setShowBreathingCoach] = useState(false);
   const [breathingPhase, setBreathingPhase] = useState<'inhale' | 'hold1' | 'exhale' | 'hold2'>('inhale');
   const [breathingCycle, setBreathingCycle] = useState(0);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [breathingProgress, setBreathingProgress] = useState(0);
   const totalCycles = 5; // Number of breathing cycles to complete
 
@@ -1227,104 +1227,14 @@ const EnhancedEmotionAid = () => {
     return colors[hash % colors.length];
   };
 
-  // profile for user avatar
+  // profile for user avatar (age_group kept from signup, not auto-predicted)
   const [profile, setProfile] = useState<{ name: string; email?: string; gender: string; photoDataUrl?: string | null; age_group?: string; ageGroup?: string; age?: number } | null>(null);
-  const [agePredicting, setAgePredicting] = useState(false);
   useEffect(() => {
     try {
       const raw = localStorage.getItem('emotionAidUser');
       if (raw) setProfile(JSON.parse(raw));
     } catch (err) { void err; }
   }, []);
-
-  // Track last prediction attempt per photo to avoid tight retry loops when backend fails
-  const lastPredictedPhotoRef = useRef<string | null>(null);
-  const lastAttemptTimeRef = useRef<number | null>(null);
-
-  // If profile has a photo but no age_group, request prediction from backend once
-  useEffect(() => {
-    const run = async () => {
-      if (!profile) return;
-      if (!profile.photoDataUrl) return;
-      if (profile.age_group || typeof profile.age === 'number') return; // already have prediction
-      if (agePredicting) return; // already in progress
-
-      const photo = profile.photoDataUrl;
-      const lastPhoto = lastPredictedPhotoRef.current;
-      const lastTime = lastAttemptTimeRef.current;
-      const now = Date.now();
-
-      // If we've attempted this same photo recently (cooldown), skip
-      const COOLDOWN_MS = 60_000; // 60 seconds
-      if (lastPhoto && photo === lastPhoto && lastTime && (now - lastTime) < COOLDOWN_MS) {
-        return;
-      }
-
-      // mark attempt
-      lastPredictedPhotoRef.current = photo;
-      lastAttemptTimeRef.current = now;
-
-      setAgePredicting(true);
-      try {
-        // prepare image blob: if photo is a data URL, convert locally to avoid an extra fetch call
-        let blob: Blob;
-        if (typeof photo === 'string' && photo.startsWith('data:')) {
-          // convert data URL to blob
-          const dataURLToBlob = (dataURL: string) => {
-            const parts = dataURL.split(',');
-            const meta = parts[0] || '';
-            const base64 = parts[1] || '';
-            const mimeMatch = meta.match(/:(.*?);/);
-            const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-            const binary = atob(base64);
-            const len = binary.length;
-            const u8 = new Uint8Array(len);
-            for (let i = 0; i < len; i++) u8[i] = binary.charCodeAt(i);
-            return new Blob([u8], { type: mime });
-          };
-          blob = dataURLToBlob(photo);
-        } else {
-          // remote URL: fetch the image and convert to blob
-          const res = await fetch(photo);
-          if (!res.ok) throw new Error('Failed to fetch photo for age prediction: ' + res.status);
-          blob = await res.blob();
-        }
-
-        const form = new FormData();
-        form.append('image', blob, 'avatar.png');
-
-        const resp = await fetch('http://127.0.0.1:5000/predict_age', { method: 'POST', body: form });
-        if (!resp.ok) {
-          console.warn('predict_age returned non-ok', resp.status, await resp.text().catch(() => '')); 
-          return;
-        }
-        const json = await resp.json();
-        const updated = { ...profile } as typeof profile;
-        if (json.age_group) updated.age_group = json.age_group;
-        else if (typeof json.age === 'number') updated.age = json.age;
-
-        // persist updated profile locally
-        try {
-          localStorage.setItem('emotionAidUser', JSON.stringify(updated));
-        } catch (e) { void e; }
-        setProfile(updated);
-      } catch (err) {
-        // Provide richer diagnostic hints for common failure modes
-        console.warn('Age prediction failed', err);
-        // Typical causes:
-        // - Backend not running or unreachable (server process stopped, wrong host/port, firewall)
-        // - CORS blocking the POST from the browser (check browser console network/console for CORS errors)
-        // - Mixed-content blocking when app served over HTTPS and backend uses HTTP
-        // - If photo is remote, the initial fetch(photo) could fail due to cross-origin or network
-        // Check: is the Flask backend running on port 5000? Try visiting http://127.0.0.1:5000/ in a browser or check server logs.
-      } finally {
-        setAgePredicting(false);
-        lastAttemptTimeRef.current = Date.now();
-      }
-    };
-
-    void run();
-  }, [profile, agePredicting]);
 
   // listen for cross-component profile updates (Auth component dispatches this)
   useEffect(() => {
@@ -1361,6 +1271,12 @@ const EnhancedEmotionAid = () => {
   const [tempPhotoDataUrl, setTempPhotoDataUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
+
+  // 🆘 EMERGENCY SOS STATE
+  const [showEmergencySOS, setShowEmergencySOS] = useState(false);
+  const [sosBreathingActive, setSosBreathingActive] = useState(false);
+  const [sosBreathingPhase, setSosBreathingPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
+  const [sosBreathingCount, setSosBreathingCount] = useState(4);
 
   // close profile menu when clicking outside
   useEffect(() => {
@@ -1498,6 +1414,7 @@ const EnhancedEmotionAid = () => {
   }, []);
 
   // Fuse face and audio predictions into a single map and update UI state
+  // 🎯 ADAPTIVE FUSION: Weights adjust based on model confidence for better accuracy
   const computeAndSetFusion = React.useCallback((face: Record<string, number> | null, audio: Record<string, number> | null) => {
     const keys = new Set<string>();
     if (face) Object.keys(face).forEach(k => keys.add(k));
@@ -1509,15 +1426,39 @@ const EnhancedEmotionAid = () => {
       return;
     }
 
-    const fused: Record<string, number> = {};
-    // weights: face 0.6, audio 0.4 when both present
-    const wFace = face ? 0.6 : 0;
-    const wAudio = audio ? 0.4 : 0;
+    // 🎯 ADAPTIVE WEIGHT CALCULATION
+    // Dynamically adjust weights based on each model's confidence
+    let wFace = 0.6;  // default face weight
+    let wAudio = 0.4; // default audio weight
 
+    if (face && audio) {
+      // Calculate confidence for each modality (max probability = confidence)
+      const faceConfidence = Math.max(...Object.values(face));
+      const audioConfidence = Math.max(...Object.values(audio));
+      const totalConfidence = faceConfidence + audioConfidence;
+
+      if (totalConfidence > 0) {
+        // Higher confidence modality gets proportionally more weight
+        // Blend with default weights (70% adaptive, 30% fixed for stability)
+        const adaptiveFaceWeight = faceConfidence / totalConfidence;
+        const adaptiveAudioWeight = audioConfidence / totalConfidence;
+        
+        wFace = 0.7 * adaptiveFaceWeight + 0.3 * 0.6;  // Blend adaptive + fixed
+        wAudio = 0.7 * adaptiveAudioWeight + 0.3 * 0.4;
+      }
+    } else if (face) {
+      wFace = 1.0;
+      wAudio = 0.0;
+    } else if (audio) {
+      wFace = 0.0;
+      wAudio = 1.0;
+    }
+
+    const fused: Record<string, number> = {};
     keys.forEach(key => {
       const f = face && typeof face[key] === 'number' ? face[key] : 0;
       const a = audio && typeof audio[key] === 'number' ? audio[key] : 0;
-      const val = wFace + wAudio > 0 ? (f * wFace + a * wAudio) / (wFace + wAudio) : 0;
+      const val = f * wFace + a * wAudio;
       fused[key] = Number(val);
     });
 
@@ -1525,7 +1466,7 @@ const EnhancedEmotionAid = () => {
     const total = Object.values(fused).reduce((s, v) => s + v, 0) || 1;
     Object.keys(fused).forEach(k => { fused[k] = fused[k] / total; });
 
-  setDetectedEmotionScores(fused);
+    setDetectedEmotionScores(fused);
     // set top emotion and confidence
     const topKey = Object.entries(fused).reduce((best, cur) => cur[1] > best[1] ? cur : best, ['', -Infinity])[0];
     if (topKey) {
@@ -1582,6 +1523,32 @@ const EnhancedEmotionAid = () => {
 
     return () => document.removeEventListener('keydown', onKey);
   }, [showImmediatePopup]);
+
+  // 🆘 SOS Breathing Exercise Timer
+  useEffect(() => {
+    if (!sosBreathingActive) return;
+
+    const interval = setInterval(() => {
+      setSosBreathingCount((prev) => {
+        if (prev > 1) return prev - 1;
+
+        // When countdown reaches 0, switch to next phase
+        if (sosBreathingPhase === 'inhale') {
+          setSosBreathingPhase('hold');
+          return 4; // 4 seconds hold
+        } else if (sosBreathingPhase === 'hold') {
+          setSosBreathingPhase('exhale');
+          return 4; // 4 seconds exhale
+        } else {
+          // After exhale, loop back to inhale
+          setSosBreathingPhase('inhale');
+          return 4; // 4 seconds inhale
+        }
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sosBreathingActive, sosBreathingPhase]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -2410,6 +2377,15 @@ useEffect(() => {
               )}
             </button>
 
+            {/* 🆘 EMERGENCY SOS BUTTON */}
+            <button
+              onClick={() => setShowEmergencySOS(true)}
+              className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 animate-pulse border-2 border-red-400"
+              title="Emergency SOS - Get Immediate Help"
+            >
+              <Heart className="w-5 h-5 text-white animate-pulse" />
+            </button>
+
             <div className="relative">
               <button
                 ref={notificationsButtonRef}
@@ -2562,8 +2538,6 @@ useEffect(() => {
                                   localStorage.setItem('emotionAidUser', JSON.stringify(updated));
                                   setProfile(updated);
 
-                                  // Age prediction will be handled by the centralized effect (prevents duplicate requests)
-
                                   setIsEditingProfile(false);
                                   setIsProfileMenuOpen(false);
                                 } catch (err) { console.warn(err); }
@@ -2605,29 +2579,38 @@ useEffect(() => {
                       setShowHistoryPanel(true);
                       setShowGoalsPanel(false);
                       setShowDiaryPanel(false);
+                      setShowAnalyticsPanel(false);
                     } else if (item.id === 'goals') {
                       setShowGoalsPanel(true);
                       setShowHistoryPanel(false);
                       setShowDiaryPanel(false);
+                      setShowAnalyticsPanel(false);
                     } else if (item.id === 'diary') {
                       setShowDiaryPanel(true);
                       setShowHistoryPanel(false);
                       setShowGoalsPanel(false);
+                      setShowAnalyticsPanel(false);
+                    } else if (item.id === 'analytics') {
+                      setShowAnalyticsPanel(true);
+                      setShowHistoryPanel(false);
+                      setShowGoalsPanel(false);
+                      setShowDiaryPanel(false);
                     } else {
                       setActiveMenu(item.id);
                       setShowHistoryPanel(false);
                       setShowGoalsPanel(false);
                       setShowDiaryPanel(false);
+                      setShowAnalyticsPanel(false);
                     }
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    activeMenu === item.id || (item.id === 'history' && showHistoryPanel) || (item.id === 'goals' && showGoalsPanel) || (item.id === 'diary' && showDiaryPanel)
+                    activeMenu === item.id || (item.id === 'history' && showHistoryPanel) || (item.id === 'goals' && showGoalsPanel) || (item.id === 'diary' && showDiaryPanel) || (item.id === 'analytics' && showAnalyticsPanel)
                       ? `${theme.statusBg} ${theme.textSecondary} border ${theme.border}`
                       : `${theme.textPrimary} hover:${theme.statusBg} hover:${theme.textSecondary}`
                   }`}
                   style={{ userSelect: 'none' }}
                 >
-                  <div className={activeMenu === item.id || (item.id === 'history' && showHistoryPanel) || (item.id === 'goals' && showGoalsPanel) || (item.id === 'diary' && showDiaryPanel) ? theme.textSecondary : "text-slate-500"}>
+                  <div className={activeMenu === item.id || (item.id === 'history' && showHistoryPanel) || (item.id === 'goals' && showGoalsPanel) || (item.id === 'diary' && showDiaryPanel) || (item.id === 'analytics' && showAnalyticsPanel) ? theme.textSecondary : "text-slate-500"}>
                     {item.icon}
                   </div>
                   <span style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif', userSelect: 'none' }}>{item.label}</span>
@@ -3466,6 +3449,262 @@ useEffect(() => {
         </div>
       )}
 
+      {/* 📊 Analytics Panel - Emotion Trend Visualization */}
+      {showAnalyticsPanel && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[90000] flex items-center justify-end" onClick={() => setShowAnalyticsPanel(false)}>
+          <div 
+            className={`w-full max-w-4xl h-full ${theme.cardBg} shadow-2xl overflow-y-auto animate-slide-in-right`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className={`sticky top-0 ${theme.navBg} backdrop-blur-xl border-b ${theme.border} p-6 flex items-center justify-between z-10`}>
+              <div className="flex items-center space-x-3">
+                <div className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center`}>
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className={`text-2xl font-bold ${theme.textPrimary}`}>Emotion Analytics</h2>
+                  <p className={`text-sm ${theme.textSecondary}`}>Visualize your emotional patterns over time</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAnalyticsPanel(false)}
+                className={`w-10 h-10 ${theme.statusBg} rounded-xl flex items-center justify-center hover:scale-105 transition-all`}
+              >
+                <X className={`w-5 h-5 ${theme.textSecondary}`} />
+              </button>
+            </div>
+
+            {/* Analytics Content */}
+            <div className="p-6 space-y-6">
+              {emotionHistory.length === 0 ? (
+                <div className={`text-center py-12 ${theme.textSecondary}`}>
+                  <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-semibold">No data available yet</p>
+                  <p className="text-sm mt-2">Start detecting emotions to see your analytics</p>
+                </div>
+              ) : (
+                <>
+                  {/* Time Period Selector */}
+                  <div className="flex items-center justify-between">
+                    <h3 className={`text-lg font-bold ${theme.textPrimary}`}>Emotion Trends</h3>
+                    <div className="flex gap-2">
+                      <button className={`px-4 py-2 ${theme.statusBg} rounded-lg text-sm font-semibold ${theme.textSecondary}`}>
+                        Last 7 Days
+                      </button>
+                      <button className={`px-4 py-2 ${theme.cardBg} rounded-lg text-sm font-semibold ${theme.textSecondary} border ${theme.border}`}>
+                        Last 30 Days
+                      </button>
+                      <button className={`px-4 py-2 ${theme.cardBg} rounded-lg text-sm font-semibold ${theme.textSecondary} border ${theme.border}`}>
+                        All Time
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Emotion Trend Line Chart Visualization */}
+                  <div className={`${theme.cardBg} rounded-2xl p-6 border ${theme.border}`}>
+                    <h4 className={`text-base font-bold ${theme.textPrimary} mb-4`}>Daily Emotion Distribution</h4>
+                    <div className="space-y-4">
+                      {(() => {
+                        // Group by last 7 days
+                        const last7Days = Array.from({ length: 7 }, (_, i) => {
+                          const date = new Date();
+                          date.setDate(date.getDate() - (6 - i));
+                          date.setHours(0, 0, 0, 0);
+                          return date;
+                        });
+
+                        return last7Days.map((date, idx) => {
+                          const dayStart = date.getTime();
+                          const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+                          const dayEmotions = emotionHistory.filter(r => r.timestamp >= dayStart && r.timestamp < dayEnd);
+                          
+                          // Count emotions for this day
+                          const emotionCounts: Record<string, number> = {};
+                          dayEmotions.forEach(r => {
+                            emotionCounts[r.emotion] = (emotionCounts[r.emotion] || 0) + 1;
+                          });
+
+                          const total = dayEmotions.length;
+                          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                          return (
+                            <div key={idx} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className={`text-sm font-semibold ${theme.textPrimary}`}>
+                                  {dayName}, {dateStr}
+                                </span>
+                                <span className={`text-xs ${theme.textSecondary}`}>
+                                  {total} {total === 1 ? 'record' : 'records'}
+                                </span>
+                              </div>
+                              {total > 0 ? (
+                                <div className="flex h-8 rounded-lg overflow-hidden">
+                                  {Object.entries(emotionCounts)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .map(([emotion, count]) => {
+                                      const percentage = (count / total) * 100;
+                                      const emotionColors: Record<string, string> = {
+                                        Happy: 'bg-amber-400',
+                                        Sad: 'bg-blue-400',
+                                        Angry: 'bg-rose-400',
+                                        Fearful: 'bg-purple-400',
+                                        Surprised: 'bg-pink-400',
+                                        Disgusted: 'bg-green-400',
+                                        Neutral: 'bg-slate-400'
+                                      };
+                                      return (
+                                        <div
+                                          key={emotion}
+                                          className={`${emotionColors[emotion] || 'bg-gray-400'} flex items-center justify-center text-xs font-bold text-white transition-all hover:opacity-80`}
+                                          style={{ width: `${percentage}%` }}
+                                          title={`${emotion}: ${count} (${Math.round(percentage)}%)`}
+                                        >
+                                          {percentage > 15 && emotion.slice(0, 3)}
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              ) : (
+                                <div className={`h-8 ${theme.statusBg} rounded-lg flex items-center justify-center`}>
+                                  <span className={`text-xs ${theme.textSecondary}`}>No data</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Emotion Breakdown Stats */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Most Common Emotion */}
+                    <div className={`${theme.cardBg} rounded-xl p-5 border ${theme.border}`}>
+                      <div className="flex items-center space-x-2 mb-3">
+                        <TrendingUp className={`w-5 h-5 ${theme.textSecondary}`} />
+                        <span className={`text-sm font-semibold ${theme.textSecondary}`}>Most Common</span>
+                      </div>
+                      {(() => {
+                        const counts: Record<string, number> = {};
+                        emotionHistory.forEach(r => counts[r.emotion] = (counts[r.emotion] || 0) + 1);
+                        const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                        const percentage = top ? Math.round((top[1] / emotionHistory.length) * 100) : 0;
+                        return (
+                          <>
+                            <p className={`text-3xl font-bold ${theme.textPrimary}`}>{top ? top[0] : '-'}</p>
+                            <p className={`text-sm ${theme.textSecondary}`}>{percentage}% of all emotions</p>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Peak Activity Time */}
+                    <div className={`${theme.cardBg} rounded-xl p-5 border ${theme.border}`}>
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Clock className={`w-5 h-5 ${theme.textSecondary}`} />
+                        <span className={`text-sm font-semibold ${theme.textSecondary}`}>Peak Activity</span>
+                      </div>
+                      {(() => {
+                        const hourCounts: Record<number, number> = {};
+                        emotionHistory.forEach(r => {
+                          const hour = new Date(r.timestamp).getHours();
+                          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                        });
+                        const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
+                        const formatHour = (h: number) => {
+                          const period = h >= 12 ? 'PM' : 'AM';
+                          const hour12 = h % 12 || 12;
+                          return `${hour12}:00 ${period}`;
+                        };
+                        return (
+                          <>
+                            <p className={`text-3xl font-bold ${theme.textPrimary}`}>
+                              {peakHour ? formatHour(parseInt(peakHour[0])) : '-'}
+                            </p>
+                            <p className={`text-sm ${theme.textSecondary}`}>
+                              {peakHour ? `${peakHour[1]} detections` : 'Not enough data'}
+                            </p>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Hourly Heatmap */}
+                  <div className={`${theme.cardBg} rounded-2xl p-6 border ${theme.border}`}>
+                    <h4 className={`text-base font-bold ${theme.textPrimary} mb-4`}>Activity Heatmap (24 Hours)</h4>
+                    <div className="grid grid-cols-12 gap-2">
+                      {Array.from({ length: 24 }, (_, hour) => {
+                        const hourEmotions = emotionHistory.filter(r => new Date(r.timestamp).getHours() === hour);
+                        const count = hourEmotions.length;
+                        const maxCount = Math.max(...Array.from({ length: 24 }, (_, h) => 
+                          emotionHistory.filter(r => new Date(r.timestamp).getHours() === h).length
+                        ));
+                        const intensity = maxCount > 0 ? count / maxCount : 0;
+                        const getColor = (intensity: number) => {
+                          if (intensity === 0) return theme.statusBg;
+                          if (intensity < 0.33) return 'bg-blue-300';
+                          if (intensity < 0.66) return 'bg-blue-500';
+                          return 'bg-blue-700';
+                        };
+
+                        return (
+                          <div key={hour} className="text-center">
+                            <div 
+                              className={`${getColor(intensity)} rounded-lg h-12 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform`}
+                              title={`${hour}:00 - ${count} records`}
+                            >
+                              {count > 0 && (
+                                <span className="text-xs font-bold text-white">{count}</span>
+                              )}
+                            </div>
+                            <span className={`text-xs ${theme.textSecondary} mt-1 block`}>{hour}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Confidence Trends */}
+                  <div className={`${theme.cardBg} rounded-2xl p-6 border ${theme.border}`}>
+                    <h4 className={`text-base font-bold ${theme.textPrimary} mb-4`}>Detection Confidence Over Time</h4>
+                    <div className="space-y-3">
+                      {emotionHistory.slice(-10).reverse().map((record, idx) => (
+                        <div key={idx} className="flex items-center space-x-3">
+                          <span className={`text-xs ${theme.textSecondary} w-32`}>
+                            {new Date(record.timestamp).toLocaleString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
+                          <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-6 overflow-hidden">
+                            <div 
+                              className={`h-full ${
+                                record.confidence >= 80 ? 'bg-green-500' :
+                                record.confidence >= 60 ? 'bg-amber-500' :
+                                'bg-rose-500'
+                              } flex items-center justify-end pr-2 transition-all`}
+                              style={{ width: `${record.confidence}%` }}
+                            >
+                              <span className="text-xs font-bold text-white">{record.confidence}%</span>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-semibold ${theme.textPrimary} w-20`}>{record.emotion}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Goals & Achievements Panel */}
       {showGoalsPanel && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[90000] flex items-center justify-end" onClick={() => setShowGoalsPanel(false)}>
@@ -3875,7 +4114,7 @@ useEffect(() => {
             </div>
             <button
               onClick={() => setShowAchievementPopup(false)}
-              className="mt-4 w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 rounded-lg transition-all"
+              className={`mt-4 w-full font-semibold py-2 rounded-lg transition-all ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white/90 hover:bg-white text-slate-800'}`}
             >
               Awesome! ✨
             </button>
@@ -3915,7 +4154,7 @@ useEffect(() => {
                 setBreathingCycle(0);
                 setBreathingPhase('inhale');
               }}
-              className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all"
+              className={`px-6 py-3 rounded-xl font-semibold transition-all ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-white/90 hover:bg-white text-slate-800'}`}
             >
               Stop Exercise
             </button>
@@ -3945,6 +4184,154 @@ useEffect(() => {
         <div className="fixed top-24 right-8 bg-red-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-3 z-[99999] animate-pulse">
           <div className="w-3 h-3 bg-white rounded-full animate-ping"></div>
           <span className="font-bold">Recording Voice... (6s)</span>
+        </div>
+      )}
+
+      {/* 🆘 EMERGENCY SOS OVERLAY */}
+      {showEmergencySOS && (
+        <div className="fixed inset-0 bg-gradient-to-br from-red-900/95 to-rose-900/95 backdrop-blur-lg flex items-center justify-center z-[100001] animate-fade-in p-4 overflow-y-auto">
+          <div className="max-w-lg w-full my-8 relative">
+            {/* Main SOS Content */}
+            <div className="rounded-2xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+              {/* Close button - positioned inside content */}
+              <button
+                onClick={() => {
+                  setShowEmergencySOS(false);
+                  setSosBreathingActive(false);
+                }}
+                className="absolute top-4 right-4 w-9 h-9 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg z-10"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-white rounded-full mx-auto mb-3 flex items-center justify-center animate-pulse">
+                  <Heart className="w-8 h-8 text-red-500" />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">You&apos;re Not Alone</h2>
+                <p className="text-lg text-white/90">We&apos;re here to help you through this moment</p>
+              </div>
+
+              {/* Breathing Exercise Section */}
+              {!sosBreathingActive ? (
+                <div className="space-y-4">
+                  {/* Quick Calming Button */}
+                  <button
+                    onClick={() => {
+                      setSosBreathingActive(true);
+                      setSosBreathingPhase('inhale');
+                      setSosBreathingCount(4);
+                    }}
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-105"
+                  >
+                    <Wind className="w-6 h-6 inline-block mr-2" />
+                    Start Calming Breathing (90s)
+                  </button>
+
+                  {/* Crisis Hotlines */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-bold text-white mb-2">📞 Crisis Support (24/7)</h3>
+                    
+                    <a
+                      href="tel:1926"
+                      className="block bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white py-3 px-4 rounded-lg font-bold text-base shadow-lg hover:shadow-xl transition-all duration-200 text-center"
+                    >
+                      Call 1926 - Sumithrayo (Sri Lanka)
+                    </a>
+
+                    <a
+                      href="tel:0112692909"
+                      className="block bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white py-3 px-4 rounded-lg font-bold text-base shadow-lg hover:shadow-xl transition-all duration-200 text-center"
+                    >
+                      Call 011-269-2909 - Mental Health Helpline
+                    </a>
+
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <a
+                        href="tel:1333"
+                        className="bg-rose-600/80 hover:bg-rose-700/80 text-white py-2 px-3 rounded-lg font-semibold text-xs shadow-lg transition-all duration-200 text-center"
+                      >
+                        Police Emergency: 1333
+                      </a>
+                      <a
+                        href="tel:1990"
+                        className="bg-rose-600/80 hover:bg-rose-700/80 text-white py-2 px-3 rounded-lg font-semibold text-xs shadow-lg transition-all duration-200 text-center"
+                      >
+                        Ambulance: 1990
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* International Resources */}
+                  <div className="border-t border-white/20 pt-4 mt-4">
+                    <h3 className="text-base font-bold text-white mb-2">�🇰 Additional Sri Lanka Resources</h3>
+                    <div className="text-white/90 space-y-1 text-xs">
+                      <p>� National Hospital: 011-269-1111</p>
+                      <p>💚 Shanthi Maargam: 0714-444-444</p>
+                      <p>🧠 SLCPMH Hotline: 011-216-8073</p>
+                      <p>👨‍👩‍👧 Family Planning: 011-555-5678</p>
+                      <p className="mt-2 text-[10px] text-white/70">Available 24/7 for mental health support</p>
+                    </div>
+                  </div>
+
+                  {/* Grounding Techniques */}
+                  <div className="border-t border-white/20 pt-4 mt-4">
+                    <h3 className="text-base font-bold text-white mb-2">🧘 Quick Grounding (5-4-3-2-1)</h3>
+                    <ul className="text-white/90 space-y-1 text-xs">
+                      <li>👁️ <strong>5 things</strong> you can see</li>
+                      <li>✋ <strong>4 things</strong> you can touch</li>
+                      <li>👂 <strong>3 things</strong> you can hear</li>
+                      <li>👃 <strong>2 things</strong> you can smell</li>
+                      <li>👅 <strong>1 thing</strong> you can taste</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                // SOS Breathing Exercise
+                <div className="text-center space-y-6">
+                  <div className="relative w-48 h-48 mx-auto">
+                    {/* Animated breathing circle */}
+                    <div
+                      className={`absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-2xl transition-all duration-${sosBreathingPhase === 'inhale' ? '4000' : sosBreathingPhase === 'hold' ? '4000' : '4000'} ${
+                        sosBreathingPhase === 'inhale'
+                          ? 'scale-100'
+                          : sosBreathingPhase === 'hold'
+                          ? 'scale-100'
+                          : 'scale-50'
+                      }`}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-white">
+                        <div className="text-5xl font-bold mb-2">{sosBreathingCount}</div>
+                        <div className="text-lg font-semibold uppercase tracking-wide">
+                          {sosBreathingPhase === 'inhale' ? '🌬️ Breathe In' : sosBreathingPhase === 'hold' ? '⏸️ Hold' : '💨 Breathe Out'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-white/90 text-base">
+                    Focus on your breath. You&apos;re doing great. ❤️
+                  </div>
+
+                  <button
+                    onClick={() => setSosBreathingActive(false)}
+                    className="bg-white/20 hover:bg-white/30 text-white py-2 px-6 rounded-lg font-semibold transition-all duration-200"
+                  >
+                    Stop & See Resources
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom reassurance */}
+            <div className="text-center mt-4">
+              <p className="text-white/80 text-xs">
+                🔒 This is a safe space • You are valued • Help is available
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

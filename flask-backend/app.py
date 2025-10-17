@@ -411,10 +411,22 @@ else:
 # Health endpoint so visiting the base URL returns a friendly message
 @app.route('/', methods=['GET'])
 def index():
-    return jsonify({'status': 'ok', 'message': 'EmotionAid backend running', 'endpoints': ['/predict (POST)', '/predict_age (POST)', '/crewai/recommend (POST)', '/crewai/debug_fallback?emotion=Sad (GET)', '/users (GET/POST)']}), 200
+    return jsonify({'status': 'ok', 'message': 'EmotionAid backend running', 'endpoints': ['/predict (POST)', '/predict_audio (POST)', '/crewai/recommend (POST)', '/crewai/debug_fallback?emotion=Sad (GET)', '/users (GET/POST)']}), 200
 
-# Discover and load face model (prefer corrected 64x64 model if present)
-face_model_candidates = ['fer_model_corrected.h5', 'fer2013_checkpoint_seed_2024.h5']
+# Import custom layers for advanced FER model
+try:
+    from custom_layers import MaxBlurPool2D, SqueezeExcite
+    CUSTOM_LAYERS_AVAILABLE = True
+    print("✅ Custom layers (MaxBlurPool2D, SqueezeExcite) imported successfully")
+except ImportError as e:
+    CUSTOM_LAYERS_AVAILABLE = False
+    print(f"⚠️ Custom layers not available: {e}")
+    print("   Advanced model (fer_model_SE_MaxBlur.h5) will not load.")
+    MaxBlurPool2D = None
+    SqueezeExcite = None
+
+# Discover and load face model (prefer advanced SE+MaxBlur model if present)
+face_model_candidates = ['fer_model_SE_MaxBlur.h5', 'fer_model_corrected.h5', 'fer2013_checkpoint_seed_2024.h5']
 face_model_path = None
 for candidate in face_model_candidates:
     candidate_path = os.path.join(os.path.dirname(__file__), candidate)
@@ -425,9 +437,21 @@ for candidate in face_model_candidates:
 if not face_model_path:
     raise FileNotFoundError(f"No face model found in backend. Checked: {face_model_candidates}")
 
-# Load face model
-face_model = tf.keras.models.load_model(face_model_path)
-face_model.name = os.path.basename(face_model_path)
+# Load face model with custom layers support if available
+model_name = os.path.basename(face_model_path)
+custom_objects = None
+
+if CUSTOM_LAYERS_AVAILABLE and ('SE_MaxBlur' in model_name or 'se_maxblur' in model_name.lower()):
+    custom_objects = {
+        'MaxBlurPool2D': MaxBlurPool2D,
+        'SqueezeExcite': SqueezeExcite
+    }
+    print(f"🔧 Loading model with custom layers: {model_name}")
+    face_model = tf.keras.models.load_model(face_model_path, custom_objects=custom_objects)
+else:
+    face_model = tf.keras.models.load_model(face_model_path)
+
+face_model.name = model_name
 print(f"✅ Loaded face model: {face_model.name}")
 try:
     face_model.summary()
@@ -472,37 +496,6 @@ if os.path.exists(speech_model_path):
             pass
     except Exception as e:
         print(f"Failed to load speech model at {speech_model_path}: {e}")
-
-# Consolidated: attempt to load an age-group model if present
-age_model = None
-age_model_path = os.path.join(os.path.dirname(__file__), 'age_group_model.h5')
-# default labels you can override depending on your model
-age_labels = ['Child', 'Teen', 'YoungAdult', 'Adult', 'MiddleAged', 'Senior']
-age_model_input_shape = (64, 64, 3)
-if os.path.exists(age_model_path):
-    try:
-        age_model = tf.keras.models.load_model(age_model_path)
-        age_model.name = os.path.basename(age_model_path)
-        print(f"✅ Loaded age model: {age_model.name}")
-        try:
-            age_model.summary()
-        except Exception:
-            pass
-        # try to infer input shape
-        try:
-            ishape = age_model.input_shape
-            if ishape and len(ishape) >= 3:
-                if len(ishape) == 4:
-                    _, h, w, c = ishape
-                    age_model_input_shape = (int(h or 64), int(w or 64), int(c or 3))
-                elif len(ishape) == 3:
-                    _, h, w = ishape
-                    age_model_input_shape = (int(h or 64), int(w or 64), 1)
-        except Exception:
-            age_model_input_shape = age_model_input_shape
-        print(f"Age model expects input shape (h,w,c): {age_model_input_shape}")
-    except Exception as e:
-        print(f"Failed to load age model at {age_model_path}: {e}")
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -551,60 +544,6 @@ def predict():
         'model_used': face_model.name
     }
     return jsonify(result)
-
-
-# (predict_age route defined further down; keep single consolidated handler)
-
-
-@app.route('/predict_age', methods=['POST'])
-def predict_age():
-    if age_model is None:
-        return jsonify({'error': 'Age model not available on server. Place age_group_model.h5 in the backend folder.'}), 400
-
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image part'}), 400
-
-    file = request.files['image']
-    # Standardize to the age model's expected input shape (inferred at load time)
-    try:
-        target_h, target_w, target_c = age_model_input_shape
-        img = Image.open(file.stream)
-        # convert channels to match model expectation
-        if target_c == 1:
-            img = img.convert('L')
-        else:
-            img = img.convert('RGB')
-        img = img.resize((target_w, target_h))
-
-        arr = np.array(img).astype('float32') / 255.0
-        # ensure channel axis exists when grayscale
-        if target_c == 1 and arr.ndim == 2:
-            arr = arr.reshape(target_h, target_w, 1)
-        # if model expects different channel count, try to adapt
-        if arr.shape[-1] != target_c:
-            if target_c == 1:
-                arr = np.mean(arr, axis=2, keepdims=True)
-            else:
-                # replicate first channel into three if needed
-                arr = np.repeat(arr[..., :1], target_c, axis=2)
-
-        inp = np.expand_dims(arr, axis=0)
-
-        preds = age_model.predict(inp)[0]
-        # If scalar output -> treat as estimated age
-        if preds.shape == () or len(preds) == 1:
-            age = float(preds) if hasattr(preds, '__float__') else float(preds[0])
-            return jsonify({'age': age, 'model_used': age_model.name})
-        # otherwise treat as class probabilities
-        if len(preds) == len(age_labels):
-            idx = int(np.argmax(preds))
-            label = age_labels[idx]
-            return jsonify({'age_group': label, 'age_group_index': idx, 'model_used': age_model.name, 'predictions': dict(zip(age_labels, map(float, preds)))})
-        # fallback: return argmax index
-        idx = int(np.argmax(preds))
-        return jsonify({'age_group_index': idx, 'model_used': age_model.name, 'predictions': list(map(float, preds))})
-    except Exception as e:
-        return jsonify({'error': 'Age prediction failed', 'detail': str(e)}), 500
 
 
 @app.route('/predict_audio', methods=['POST'])
