@@ -39,6 +39,19 @@ import {
 } from "lucide-react";
 import Image from 'next/image';
 
+// Add CSS animation for heart icon color cycling
+const heartColorAnimation = `
+  @keyframes heartColorCycle {
+    0% { background: linear-gradient(135deg, #9ca3af, #6b7280); } /* Gray */
+    16.66% { background: linear-gradient(135deg, #60a5fa, #3b82f6); } /* Blue */
+    33.33% { background: linear-gradient(135deg, #34d399, #10b981); } /* Green */
+    50% { background: linear-gradient(135deg, #fbbf24, #f59e0b); } /* Yellow */
+    66.66% { background: linear-gradient(135deg, #f87171, #ef4444); } /* Red */
+    83.33% { background: linear-gradient(135deg, #a78bfa, #8b5cf6); } /* Purple */
+    100% { background: linear-gradient(135deg, #9ca3af, #6b7280); } /* Gray */
+  }
+`;
+
 // Beautiful brown square nodes neural network - horizontal left-to-right animation
 const NeuralNetwork: React.FC<{ 
   size?: number; 
@@ -1651,7 +1664,7 @@ const EnhancedEmotionAid = () => {
     { id: "analytics", icon: <BarChart3 className="w-5 h-5" />, label: "Analytics" },
     { id: "history", icon: <History className="w-5 h-5" />, label: "History" },
     { id: "diary", icon: <Book className="w-5 h-5" />, label: "Encrypted Diary" },
-    { id: "goals", icon: <Trophy className="w-5 h-5" />, label: "Goals & Achievements" },
+    { id: "goals", icon: <Trophy className="w-5 h-5" />, label: "Goals & Rewards" },
     { id: "settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },
   ];
 
@@ -2317,11 +2330,19 @@ useEffect(() => {
 
   return (
     <div className={`w-screen h-screen bg-gradient-to-br ${theme.bg} overflow-hidden transition-all duration-1000`}>
+      {/* Inject CSS animation */}
+      <style dangerouslySetInnerHTML={{ __html: heartColorAnimation }} />
+      
       {/* Top Navigation Bar */}
       <div className={`h-16 ${theme.navBg} backdrop-blur-xl border-b ${theme.border} flex items-center justify-between px-6 shadow-sm`}>
         <div className="flex items-center space-x-4">
           <div className="relative">
-            <div className={`w-10 h-10 bg-gradient-to-br ${theme.accent} rounded-xl flex items-center justify-center shadow-lg`}>
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+              style={{ 
+                animation: 'heartColorCycle 12s ease-in-out infinite'
+              }}
+            >
               <Heart className="w-5 h-5 text-white" />
             </div>
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -2341,7 +2362,7 @@ useEffect(() => {
             size={140} 
             nodes={10} 
             horizontal={true} 
-            color="#6b7289" 
+            color="green" 
             lineColor="#9ca3af"
           />
           {/* Red Animation */}
@@ -2615,8 +2636,8 @@ useEffect(() => {
           </div>
 
           {/* Detection Mode Selector */}
-          <div className="p-4 border-t border-b border-slate-200">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3"
+          <div className={`p-4 border-t border-b ${theme.border}`}>
+            <h3 className={`text-sm font-semibold ${theme.textPrimary} mb-3`}
              style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif' }}>Detection Mode</h3>
             <div className="grid grid-cols-3 gap-2">
               {detectionModes.map((mode) => (
@@ -2626,7 +2647,9 @@ useEffect(() => {
                   className={`flex flex-col items-center p-3 rounded-xl text-xs transition-all relative ${
                     detectionMode === mode.id
                       ? `${mode.bgColor} ${mode.color} border-2 ${mode.color.replace('text-', 'border-')} shadow-md`
-                      : `bg-white hover:${mode.bgColor} border-2 border-slate-200 hover:${mode.color.replace('text-', 'border-')} hover:shadow-sm text-slate-600`
+                      : isDarkMode 
+                        ? `bg-slate-700/50 hover:${mode.bgColor} border-2 border-slate-600 hover:${mode.color.replace('text-', 'border-')} hover:shadow-sm text-slate-300`
+                        : `bg-white hover:${mode.bgColor} border-2 border-slate-200 hover:${mode.color.replace('text-', 'border-')} hover:shadow-sm text-slate-600`
                   }`}
                 >
                   <div className={`mb-2 ${detectionMode === mode.id ? mode.color : "text-slate-500"}`}>
@@ -2683,7 +2706,9 @@ useEffect(() => {
                   className={`w-full flex items-center justify-center space-x-3 py-3 rounded-xl font-medium transition-all duration-300 ${
                     isMicActive
                       ? `bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg border border-emerald-400`
-                      : `bg-white border ${theme.border} ${theme.textPrimary} hover:bg-slate-50 hover:border-emerald-300`
+                      : isDarkMode
+                        ? `bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg border border-purple-400 hover:from-purple-600 hover:to-indigo-600`
+                        : `bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg border border-purple-400 hover:from-purple-600 hover:to-indigo-600`
                   }`}
                 >
                   {isMicActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
@@ -2818,8 +2843,8 @@ useEffect(() => {
                     </div>
                     
                     {/* All Emotions Breakdown - only show when emotion is detected */}
-                    <div className="mt-4 pt-4 border-t ">
-                      <p className="text-xs text-slate-1000 mb-2"
+                    <div className={`mt-4 pt-4 border-t ${theme.border}`}>
+                      <p className={`text-xs ${theme.textPrimary} mb-2 font-medium`}
                        style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif' }}>All Detected Emotions</p>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         {displayEmotionList.map((item) => (
@@ -2827,12 +2852,20 @@ useEffect(() => {
                             key={item.key}
                             className={`flex items-center justify-between p-2 rounded-lg ${
                               item.label === currentEmotion || item.label.includes(currentEmotion) 
-                                ? 'bg-white/80 font-semibold ' + theme.textSecondary
-                                : 'bg-white/40 text-slate-500'
+                                ? isDarkMode
+                                  ? `${theme.statusBg} font-semibold ${theme.textSecondary} border ${theme.border}` // Dark mode: theme colors with border
+                                  : 'bg-blue-100 font-semibold text-blue-700' // Light mode: bright blue highlight (original)
+                                : isDarkMode
+                                  ? 'bg-slate-700/40 border border-slate-600/50 text-slate-300' // Dark mode: visible dark bg with lighter text
+                                  : 'bg-white/40 text-slate-500' // Light mode: white bg (original)
                             }`}
                           >
                             <span>{item.label}</span>
-                            <span className={item.label === currentEmotion || item.label.includes(currentEmotion) ? theme.textSecondary : 'text-slate-500'}>
+                            <span className={
+                              item.label === currentEmotion || item.label.includes(currentEmotion) 
+                                ? isDarkMode ? theme.textSecondary : 'text-blue-700'
+                                : isDarkMode ? 'text-slate-300' : 'text-slate-500'
+                            }>
                               {item.confidence}%
                             </span>
                           </div>
@@ -2907,7 +2940,7 @@ useEffect(() => {
                   value={userDescription}
                   onChange={e => setUserDescription(e.target.value)}
                   placeholder="Describe your problem (optional)"
-                  className="w-full p-3 rounded-lg border border-slate-200 mb-2 text-sm text-gray-900 placeholder:text-gray-700"
+                  className={`w-full p-3 rounded-lg border ${theme.border} mb-2 text-sm ${isDarkMode ? 'text-white bg-slate-800/50 placeholder:text-slate-400' : 'text-gray-900 bg-white placeholder:text-gray-500'}`}
                   rows={3}
                 />
                 <button
@@ -3009,7 +3042,7 @@ useEffect(() => {
                 </button>
                 {crewAISolution && (
                   <div className="mt-4 flex items-start gap-3">
-                    <div className="flex-1 rounded-lg bg-blue-50 border border-blue-200 p-3 max-w-4xl w-full">
+                    <div className={`flex-1 rounded-lg border p-3 max-w-4xl w-full ${isDarkMode ? 'bg-slate-800/50 border-slate-600' : 'bg-blue-50 border-blue-200'}`}>
                       <h4 className={`font-semibold ${theme.textSecondary} mb-2`}>CrewAI Solution Recommendation</h4>
                       <p className={`text-sm ${theme.textPrimary} whitespace-pre-line leading-relaxed line-clamp-3`}>{crewAISolution}</p>
                     </div>
@@ -3027,7 +3060,7 @@ useEffect(() => {
                             // small visual confirmation could be added later
                           } catch (err) { void err; }
                         }}
-                        className="px-3 py-2 rounded-md border text-sm font-semibold text-black bg-white"
+                        className={`px-3 py-2 rounded-md border text-sm font-semibold ${isDarkMode ? 'bg-slate-700 text-white border-slate-600 hover:bg-slate-600' : 'bg-white text-black border-slate-300 hover:bg-slate-50'}`}
                       >
                         Copy
                       </button>
@@ -3072,8 +3105,8 @@ useEffect(() => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowImmediatePopup(false)} />
 
-          <div className={`relative w-full max-w-3xl mx-4 bg-white rounded-xl border ${theme.border} p-6 shadow-lg overflow-visible`} role="dialog" aria-modal="true">
-            <button aria-label="Close immediate support" onClick={() => setShowImmediatePopup(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">✕</button>
+          <div className={`relative w-full max-w-3xl mx-4 rounded-xl border ${theme.border} p-6 shadow-lg overflow-visible ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`} role="dialog" aria-modal="true">
+            <button aria-label="Close immediate support" onClick={() => setShowImmediatePopup(false)} className={`absolute top-4 right-4 ${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}>✕</button>
 
             <div className="flex flex-col md:flex-row gap-6 items-start">
               <div className="flex-shrink-0 flex items-center">
@@ -3112,7 +3145,7 @@ useEffect(() => {
 
                     {!isImmediateLoading && immediateSolutions && (
                       <div className="flex flex-col h-full">
-                        <div className={`p-5 rounded-2xl mb-4 border ${theme.border} bg-white shadow-sm flex flex-col justify-between`} style={{ borderWidth: 1, minHeight: 180 }}>
+                        <div className={`p-5 rounded-2xl mb-4 border ${theme.border} shadow-sm flex flex-col justify-between ${isDarkMode ? 'bg-slate-700/50' : 'bg-white'}`} style={{ borderWidth: 1, minHeight: 180 }}>
                           <div>
                             <div className={`text-sm ${theme.textSecondary} mb-2`}>Top quick tip</div>
                             <div className={`mt-1 text-lg font-semibold ${theme.textPrimary}`}>{parseSteps(immediateSolutions)[0]}</div>
@@ -3127,7 +3160,7 @@ useEffect(() => {
                             </button>
                             <button
                               onClick={() => setShowMoreTips(s => !s)}
-                              className="px-4 py-2 rounded-md border text-sm font-semibold text-black"
+                              className={`px-4 py-2 rounded-md border text-sm font-semibold ${isDarkMode ? 'bg-slate-600 text-white border-slate-500 hover:bg-slate-500' : 'bg-white text-black border-slate-300 hover:bg-slate-50'}`}
                             >
                               {showMoreTips ? 'Hide tips' : 'More tips'}
                             </button>
@@ -3171,8 +3204,8 @@ useEffect(() => {
         // align to top with padding so tall modals are fully reachable on small screens; inner container scrolls
         <div className="fixed inset-0 z-60 flex items-start justify-center py-8">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCrewAIPopup(false)} />
-          <div className={`relative w-full max-w-3xl mx-4 bg-white rounded-xl border ${theme.border} p-6 shadow-2xl max-h-[90vh] overflow-y-auto`} role="dialog" aria-modal="true">
-            <button aria-label="Close crewai details" onClick={() => setShowCrewAIPopup(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">✕</button>
+          <div className={`relative w-full max-w-3xl mx-4 rounded-xl border ${theme.border} p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`} role="dialog" aria-modal="true">
+            <button aria-label="Close crewai details" onClick={() => setShowCrewAIPopup(false)} className={`absolute top-4 right-4 ${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}>✕</button>
             <h3 className={`text-xl font-bold ${theme.textPrimary} mb-2`}>CrewAI Recommendation — Details</h3>
             <p className={`text-sm ${theme.textSecondary} mb-4`}>A fuller view of the recommendation with quick actions.</p>
             {/* Parse crewAI solution into steps and render actionable cards */}
@@ -3184,7 +3217,7 @@ useEffect(() => {
                   // compute visible number skipping greetings
                   const visibleNumber = greeting ? null : (steps.slice(0, i).filter(s => !isGreetingLine(s)).length + 1);
                   return (
-                    <div key={i} className={`p-4 rounded-xl border ${theme.border} bg-white shadow-sm flex items-start gap-4`}>
+                    <div key={i} className={`p-4 rounded-xl border ${theme.border} shadow-sm flex items-start gap-4 ${isDarkMode ? 'bg-slate-700/50' : 'bg-white'}`}>
                         {greeting ? (
                           // Attractive greeting header: avatar initial + larger friendly text
                           <>
@@ -3218,9 +3251,9 @@ useEffect(() => {
                                 >Do now</button>
                                 <button
                                   onClick={async () => { try { await navigator.clipboard.writeText(step); } catch (e) { void e; } }}
-                                  className="px-3 py-1 rounded-md border text-sm font-semibold text-black bg-white"
+                                  className={`px-3 py-1 rounded-md border text-sm font-semibold ${isDarkMode ? 'bg-slate-600 text-white border-slate-500 hover:bg-slate-500' : 'bg-white text-black border-slate-300 hover:bg-slate-50'}`}
                                 >Copy</button>
-                                <span className="text-xs text-slate-400 ml-auto">{crewAIStepCompleted[i] ? 'Done' : ''}</span>
+                                <span className={`text-xs ml-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>{crewAIStepCompleted[i] ? 'Done' : ''}</span>
                               </div>
                             </div>
                           </>
@@ -3234,7 +3267,7 @@ useEffect(() => {
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => { try { navigator.clipboard.writeText(crewAISolution); } catch (err) { void err; } }}
-                className="px-4 py-2 rounded-md border text-sm font-semibold text-black bg-white"
+                className={`px-4 py-2 rounded-md border text-sm font-semibold ${isDarkMode ? 'bg-slate-700 text-white border-slate-600 hover:bg-slate-600' : 'bg-white text-black border-slate-300 hover:bg-slate-50'}`}
               >
                 Copy all
               </button>
@@ -3251,7 +3284,7 @@ useEffect(() => {
               >
                 Save
               </button>
-              <button onClick={() => setShowCrewAIPopup(false)} className="px-3 py-2 rounded-md text-sm border">Close</button>
+              <button onClick={() => setShowCrewAIPopup(false)} className={`px-3 py-2 rounded-md text-sm border ${isDarkMode ? 'bg-slate-700 text-white border-slate-600 hover:bg-slate-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}>Close</button>
             </div>
           </div>
         </div>

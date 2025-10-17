@@ -14,14 +14,19 @@ os.environ["CREWAI_LOG_LEVEL"] = "DEBUG"
 
 # Load environment variables
 load_dotenv()
+groq_key = os.getenv("GROQ_API_KEY")
 openai_key = os.getenv("OPENAI_API_KEY")
 FORCE_LOCAL_CREW = os.environ.get('FORCE_LOCAL_CREW', os.environ.get('FORCE_LOCAL_CREW'.upper(), '0')).lower() in ('1', 'true', 'yes')
+
 if not FORCE_LOCAL_CREW:
-    if not openai_key:
-        raise ValueError("OPENAI_API_KEY not found! Please check your .env file or set FORCE_LOCAL_CREW=1 to run in local mode.")
-    print("\U00002705 OPENAI_API_KEY loaded successfully")
+    if groq_key:
+        print("✅ GROQ_API_KEY loaded successfully - Using FREE Groq API!")
+    elif openai_key:
+        print("✅ OPENAI_API_KEY loaded successfully - Using OpenAI (fallback)")
+    else:
+        raise ValueError("No API key found! Please set GROQ_API_KEY or OPENAI_API_KEY in .env file, or set FORCE_LOCAL_CREW=1 to run in local mode.")
 else:
-    print('[CREW] Running in FORCE_LOCAL_CREW mode: external OpenAI calls will be avoided')
+    print('[CREW] Running in FORCE_LOCAL_CREW mode: external API calls will be avoided')
 
 # YAML loader
 def load_yaml(file_name):
@@ -58,34 +63,80 @@ def get_llm_config(model_type: str) -> LLM:
     # If forced local mode, return a minimal LLM shim to avoid external calls.
     if FORCE_LOCAL_CREW:
         return LLM(model="local-shim", temperature=0.0, max_tokens=256, timeout=1)
-    configs = {
+    
+    # ✅ PRIORITY 1: Try Groq API (FREE & FAST!)
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        print(f"🚀 Using Groq API for {model_type} model (FREE & FAST!)")
+        configs = {
             "empathy": LLM(
-                model="gpt-4o",
+                model="groq/llama-3.3-70b-versatile",
                 temperature=0.7,
-                max_tokens=4000,
-                timeout=300,
+                max_tokens=1500,
+                timeout=120,
+                api_key=groq_key,
+                max_retries=5
             ),
             "analysis": LLM(
-                model="gpt-4o",
+                model="groq/llama-3.3-70b-versatile",
                 temperature=0.3,
-                max_tokens=4000,
-                timeout=300,
+                max_tokens=1500,
+                timeout=120,
+                api_key=groq_key,
+                max_retries=5
             ),
             "reasoning": LLM(
-                model="gpt-4o",
+                model="groq/llama-3.3-70b-versatile",
                 temperature=0.2,
-                max_tokens=4000,
-                timeout=300,
+                max_tokens=1500,
+                timeout=120,
+                api_key=groq_key,
+                max_retries=5
             ),
             "creative": LLM(
-                model="gpt-4o",
+                model="groq/llama-3.3-70b-versatile",
                 temperature=0.8,
-                max_tokens=4000,
-                timeout=300,
+                max_tokens=1500,
+                timeout=120,
+                api_key=groq_key,
+                max_retries=5
             )
         }
+        return configs.get(model_type, configs["analysis"])
     
-    return configs.get(model_type, configs["analysis"])
+    # ✅ PRIORITY 2: Fallback to OpenAI (if Groq fails)
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        print(f"⚠️ Groq not available, using OpenAI gpt-3.5-turbo for {model_type}")
+        configs = {
+            "empathy": LLM(
+                model="gpt-3.5-turbo",
+                temperature=0.7,
+                max_tokens=2000,
+                timeout=120,
+            ),
+            "analysis": LLM(
+                model="gpt-3.5-turbo",
+                temperature=0.3,
+                max_tokens=2000,
+                timeout=120,
+            ),
+            "reasoning": LLM(
+                model="gpt-3.5-turbo",
+                temperature=0.2,
+                max_tokens=2000,
+                timeout=120,
+            ),
+            "creative": LLM(
+                model="gpt-3.5-turbo",
+                temperature=0.8,
+                max_tokens=2000,
+                timeout=120,
+            )
+        }
+        return configs.get(model_type, configs["analysis"])
+    
+    raise ValueError("No valid API key found for LLM configuration")
 
 @CrewBase
 class EnhancedEmotionalSupportCrew:
@@ -136,23 +187,13 @@ class EnhancedEmotionalSupportCrew:
 
     # Core Agents
     @agent
-    def emotion_intake_agent(self) -> Agent:
-        return Agent(
-            config=self.agents_config['emotion_intake_agent'],
-            verbose=True,
-            llm=get_llm_config("empathy"),
-            allow_delegation=True,
-            memory=True
-        )
-
-    @agent
     def evidence_based_strategy_analyzer(self) -> Agent:
         return Agent(
             config=self.agents_config['evidence_based_strategy_analyzer'],
             verbose=True,
             llm=get_llm_config("reasoning"),
             allow_delegation=False,
-            memory=True
+            memory=False
         )
 
     @agent
@@ -162,7 +203,7 @@ class EnhancedEmotionalSupportCrew:
             verbose=True,
             llm=get_llm_config("creative"),
             allow_delegation=True,
-            memory=True,
+            memory=False,
             allow_code_execution=False
         )
 
@@ -173,7 +214,7 @@ class EnhancedEmotionalSupportCrew:
             verbose=True,
             llm=get_llm_config("empathy"),
             allow_delegation=False,
-            memory=True,
+            memory=False,
             multimodal=True
         )
 
@@ -184,7 +225,7 @@ class EnhancedEmotionalSupportCrew:
             verbose=True,
             llm=get_llm_config("analysis"),
             allow_delegation=True,
-            memory=True
+            memory=False
         )
 
    
@@ -196,7 +237,7 @@ class EnhancedEmotionalSupportCrew:
             verbose=True,
             llm=get_llm_config("empathy"),
             allow_delegation=False,
-            memory=True,
+            memory=False,
             multimodal=True
         )
 
@@ -209,18 +250,18 @@ class EnhancedEmotionalSupportCrew:
             verbose=True,
             llm=get_llm_config("analysis"),
             allow_delegation=False,
-            memory=True
+            memory=False
         )
 
    
 
     # Enhanced Tasks
     @task
-    def emotion_intake_task(self) -> Task:
+    def contextual_analysis_task(self) -> Task:
         return Task(
-            config=self.tasks_config['emotion_intake_task'],
-            agent=self.emotion_intake_agent(),
-            
+            config=self.tasks_config['contextual_analysis_task'],
+            agent=self.contextual_analysis_researcher(),
+           
         )
 
     @task
@@ -228,7 +269,7 @@ class EnhancedEmotionalSupportCrew:
         return Task(
             config=self.tasks_config['evidence_validation_task'],
             agent=self.evidence_based_strategy_analyzer(),
-            context=[self.emotion_intake_task()],
+            context=[self.contextual_analysis_task()],
             
         )
 
@@ -237,7 +278,7 @@ class EnhancedEmotionalSupportCrew:
         return Task(
             config=self.tasks_config['personalized_intervention_task'],
             agent=self.personalized_solution_generator(),
-            context=[self.emotion_intake_task(), self.evidence_validation_task()],
+            context=[self.contextual_analysis_task(), self.evidence_validation_task()],
             
         )
 
@@ -251,15 +292,6 @@ class EnhancedEmotionalSupportCrew:
            
         )
 
-    @task
-    def contextual_analysis_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['contextual_analysis_task'],
-            agent=self.contextual_analysis_researcher(),
-            context=[self.trauma_informed_presentation_task()],
-           
-        )
-
     
         
 
@@ -268,7 +300,7 @@ class EnhancedEmotionalSupportCrew:
         return Task(
             config=self.tasks_config['research_validation_review_task'],
             agent=self.research_validation_agent(),
-            context=[self.contextual_analysis_task()],
+            context=[self.personalized_intervention_task(), self.contextual_analysis_task()],
             output_file="output/research_validation.md"
         )
 
@@ -291,7 +323,7 @@ class EnhancedEmotionalSupportCrew:
             tasks=self.tasks,    # Automatically collected by @task decorator
             process=Process.sequential,
             verbose=True,
-            memory=True,
+            memory=False,
             
         )
 

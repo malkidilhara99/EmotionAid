@@ -35,16 +35,18 @@ def get_emotion_valence(emotion: str) -> str:
         return "neutral"
 
 
-def run(emotion: str = 'Neutral', reason: str = ''):
+def run(emotion: str = 'Neutral', reason: str = '', age_group: str = 'Adult', gender: str = 'Unknown'):
     """
     Run the enhanced emotional support crew with provided emotion and reason.
     """
     valence = get_emotion_valence(emotion)
     inputs = {
         "emotion": emotion,
-        "reason": reason,
+        "reason": reason if reason else "General emotional state",
         "current_year": str(datetime.now().year),
-        "emotion_valence": valence
+        "emotion_valence": valence,
+        "age_group": age_group,
+        "gender": gender
     }
 
     # If FORCE_LOCAL_CREW is enabled return a simple deterministic fallback
@@ -63,7 +65,10 @@ def run(emotion: str = 'Neutral', reason: str = ''):
             # load fallbacks from the shared JSON file
             try:
                 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                fallback_path = os.path.join(base_dir, 'crewai_fallbacks.json')
+                # Try demo file first (comprehensive responses for video)
+                fallback_path = os.path.join(base_dir, 'crewai_fallbacks_demo.json')
+                if not os.path.exists(fallback_path):
+                    fallback_path = os.path.join(base_dir, 'crewai_fallbacks.json')
                 with open(fallback_path, 'r', encoding='utf-8') as f:
                     fallbacks = json.load(f)
             except Exception:

@@ -1,21 +1,3 @@
-emotion_intake_agent:
-  role: >
-    Clinical Emotion Assessment Coordinator
-  goal: >
-    Accurately identify and validate the detected emotion "{emotion}" for a {age_group} {gender} individual using evidence-based assessment frameworks,
-    including APA DSM-5 criteria, Circumplex Model of Affect, and affective neuroscience. Assess severity and urgent needs with age-appropriate considerations.
-  backstory: >
-    You are a trained mental health professional skilled in emotion recognition across different age groups and genders.
-    You use validated frameworks like the PANAS, clinical interviews, and affective neuroscience findings.
-    You synthesize sources such as Clinical Psychology Review, Journal of Affective Disorders, and meta-analyses
-    to ensure culturally sensitive, age-appropriate, and clinically reliable emotion identification.
-    You understand developmental psychology and tailor your assessment to the user's life stage ({age_group}).
-  # llm: openai/gpt-4o
-  allow_delegation: true
-  verbose: true
-  max_iter: 3
-  memory: true
-
 evidence_based_strategy_analyzer:
   role: >
     Clinical Research Specialist in Emotion Regulation and Well-being
@@ -38,9 +20,8 @@ evidence_based_strategy_analyzer:
   allow_delegation: false
   verbose: true
   max_iter: 5
-  memory: true
-  reasoning: true
-  max_reasoning_attempts: 3
+  memory: false
+  reasoning: false
 
 personalized_solution_generator:
   role: >
@@ -63,7 +44,7 @@ personalized_solution_generator:
   allow_delegation: true
   verbose: true
   max_iter: 4
-  memory: true
+  memory: false
   allow_code_execution: false
 
 trauma_informed_presenter:
@@ -81,7 +62,7 @@ trauma_informed_presenter:
   allow_delegation: false
   verbose: true
   max_iter: 3
-  memory: true
+  memory: false
   multimodal: true
 
 contextual_analysis_researcher:
@@ -105,9 +86,8 @@ contextual_analysis_researcher:
   allow_delegation: true
   verbose: true
   max_iter: 4
-  memory: true
-  reasoning: true
-  max_reasoning_attempts: 3
+  memory: false
+  reasoning: false
 
 research_validation_agent:
   role: >
@@ -127,9 +107,8 @@ research_validation_agent:
   allow_delegation: false
   verbose: true
   max_iter: 3
-  memory: true
-  reasoning: true
-  max_reasoning_attempts: 2
+  memory: false
+  reasoning: false
 
 final_presenter_agent:
   role: >
@@ -146,5 +125,5 @@ final_presenter_agent:
   allow_delegation: false
   verbose: true
   max_iter: 3
-  memory: true
+  memory: false
   multimodal: true
