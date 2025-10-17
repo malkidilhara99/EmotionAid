@@ -587,7 +587,8 @@ const SmartRecommendations: React.FC<{
     statusText: string;
   };
   setUserDescription: (desc: string) => void;
-}> = ({ currentEmotion, theme, setUserDescription }) => {
+  isDarkMode: boolean;
+}> = ({ currentEmotion, theme, setUserDescription, isDarkMode }) => {
   const [selectedCause, setSelectedCause] = useState<Cause | null>(null);
   const [showSolutions, setShowSolutions] = useState(false);
   
@@ -698,7 +699,7 @@ const SmartRecommendations: React.FC<{
             {getSolutionsForCause(selectedCause.id).map((solution, index) => (
               <div key={index} className={`p-4 rounded-xl ${theme.statusBg} border ${theme.border}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-semibold ${theme.textSecondary} px-2 py-1 rounded-full bg-white/70`}>
+                  <span className={`text-sm font-semibold ${theme.textSecondary} px-2 py-1 rounded-full ${isDarkMode ? 'bg-slate-700/50' : 'bg-white/70'}`}>
                     {solution.solutionType}
                   </span>
                   <span className={`text-xs px-2 py-1 rounded-full ${
@@ -2825,7 +2826,7 @@ useEffect(() => {
                   <div className="text-center space-y-4">
                     <div className="flex items-center justify-center space-x-2">
                       <p className={`text-3xl font-bold ${theme.textPrimary}`}>{currentEmotion}</p>
-                      <div className="text-xs bg-white/70 px-2 py-1 rounded-full text-slate-600"
+                      <div className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-slate-700/50 text-slate-300' : 'bg-white/70 text-slate-600'}`}
                        style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif' }}>
                         AI Enhanced
                       </div>
@@ -2833,7 +2834,7 @@ useEffect(() => {
                     <div className="space-y-3">
                       <p className={`text-sm font-medium ${theme.textSecondary}`}
                        style={{ fontFamily: 'var(--font-space-grotesk), Space Grotesk, sans-serif' }}>Confidence Level</p>
-                      <div className="w-full bg-white/70 rounded-full h-3 shadow-inner">
+                      <div className={`w-full rounded-full h-3 shadow-inner ${isDarkMode ? 'bg-slate-700/50' : 'bg-white/70'}`}>
                         <div
                           className={`bg-gradient-to-r ${theme.accent} h-3 rounded-full transition-all duration-1000 shadow-sm`}
                           style={{ width: `${confidence}%` }}
@@ -3074,6 +3075,7 @@ useEffect(() => {
                 currentEmotion={currentEmotion}
                 theme={theme}
                 setUserDescription={setUserDescription}
+                isDarkMode={isDarkMode}
               />
             ) : (
               <div className={`${theme.cardBg} backdrop-blur-xl rounded-2xl border ${theme.border} p-8 shadow-lg text-center`}>
@@ -3103,7 +3105,7 @@ useEffect(() => {
       {/* Non-blocking Immediate Solutions Popup */}
       {showImmediatePopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowImmediatePopup(false)} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={() => setShowImmediatePopup(false)} />
 
           <div className={`relative w-full max-w-3xl mx-4 rounded-xl border ${theme.border} p-6 shadow-lg overflow-visible ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`} role="dialog" aria-modal="true">
             <button aria-label="Close immediate support" onClick={() => setShowImmediatePopup(false)} className={`absolute top-4 right-4 ${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}>✕</button>
@@ -3121,26 +3123,39 @@ useEffect(() => {
                 <h3 className={`text-xl font-bold ${theme.textPrimary}`}>{cleanEmotionForUI} — Immediate Support</h3>
                 <p className={`text-sm ${theme.textSecondary} mt-1`}>Quick, focused tips to help you cope right now.</p>
 
-                {/* Breathing Exercise Quick Access */}
-                <div className="mt-4">
-                  <button
-                    onClick={() => {
-                      setShowImmediatePopup(false);
-                      setShowBreathingCoach(true);
-                      setBreathingCycle(0);
-                      setBreathingPhase('inhale');
-                      setBreathingProgress(0);
-                    }}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-3 transition-all duration-200 hover:scale-105"
-                  >
-                    <Wind className="w-6 h-6" />
-                    <span>Start Guided Breathing Exercise (5 min)</span>
-                  </button>
-                  <p className="text-xs text-center mt-2 text-slate-500">Scientifically proven to reduce stress in minutes</p>
-                </div>
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                  {/* Breathing Exercise Card - Only for negative emotions */}
+                  {isNegativeEmotion(currentEmotion) && (
+                    <div className={`p-5 rounded-2xl border ${theme.border} shadow-sm ${isDarkMode ? 'bg-gradient-to-br from-cyan-900/40 to-blue-900/40' : 'bg-gradient-to-br from-cyan-50 to-blue-50'}`}>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+                          <Wind className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h4 className={`font-bold ${theme.textPrimary}`}>Breathing Exercise</h4>
+                          <p className={`text-xs ${theme.textSecondary}`}>5 minutes • Guided</p>
+                        </div>
+                      </div>
+                      <p className={`text-sm ${theme.textSecondary} mb-4`}>
+                        Scientifically proven to reduce stress and anxiety in minutes.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setShowImmediatePopup(false);
+                          setShowBreathingCoach(true);
+                          setBreathingCycle(0);
+                          setBreathingPhase('inhale');
+                          setBreathingProgress(0);
+                        }}
+                        className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105"
+                      >
+                        Start Now
+                      </button>
+                    </div>
+                  )}
 
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                  <div className="flex flex-col h-full">
+                  {/* Quick Tips Card */}
+                  <div className={`flex flex-col h-full ${isNegativeEmotion(currentEmotion) ? '' : 'md:col-span-2'}`}>
                     {isImmediateLoading && <div className="text-sm text-slate-500">Loading suggestions…</div>}
 
                     {!isImmediateLoading && immediateSolutions && (
@@ -3203,7 +3218,7 @@ useEffect(() => {
       {showCrewAIPopup && crewAISolution && (
         // align to top with padding so tall modals are fully reachable on small screens; inner container scrolls
         <div className="fixed inset-0 z-60 flex items-start justify-center py-8">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCrewAIPopup(false)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowCrewAIPopup(false)} />
           <div className={`relative w-full max-w-3xl mx-4 rounded-xl border ${theme.border} p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`} role="dialog" aria-modal="true">
             <button aria-label="Close crewai details" onClick={() => setShowCrewAIPopup(false)} className={`absolute top-4 right-4 ${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}>✕</button>
             <h3 className={`text-xl font-bold ${theme.textPrimary} mb-2`}>CrewAI Recommendation — Details</h3>
@@ -3292,7 +3307,7 @@ useEffect(() => {
 
       {/* Emotion History Panel - Sliding from right */}
       {showHistoryPanel && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90000] flex items-center justify-end" onClick={() => setShowHistoryPanel(false)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[90000] flex items-center justify-end" onClick={() => setShowHistoryPanel(false)}>
           <div 
             className={`w-full max-w-2xl h-full ${theme.cardBg} shadow-2xl overflow-y-auto animate-slide-in-right`}
             onClick={(e) => e.stopPropagation()}
@@ -3453,7 +3468,7 @@ useEffect(() => {
 
       {/* Goals & Achievements Panel */}
       {showGoalsPanel && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90000] flex items-center justify-end" onClick={() => setShowGoalsPanel(false)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[90000] flex items-center justify-end" onClick={() => setShowGoalsPanel(false)}>
           <div 
             className={`w-full max-w-3xl h-full ${theme.cardBg} shadow-2xl overflow-y-auto animate-slide-in-right`}
             onClick={(e) => e.stopPropagation()}
@@ -3584,10 +3599,12 @@ useEffect(() => {
 
       {/* Encrypted Diary Panel */}
       {showDiaryPanel && (
-        <div className="fixed inset-y-0 right-0 w-[480px] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 shadow-2xl z-50 overflow-y-auto animate-slide-in-right">
-          <div className={`sticky top-0 ${theme.navBg} backdrop-blur-xl border-b ${theme.border} p-6 z-10`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-3">
+        <>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[90000]" onClick={() => setShowDiaryPanel(false)} />
+          <div className="fixed inset-y-0 right-0 w-[480px] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 shadow-2xl z-[90001] overflow-y-auto animate-slide-in-right">
+            <div className={`sticky top-0 ${theme.navBg} backdrop-blur-xl border-b ${theme.border} p-6 z-10`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-3">
                 <div className={`w-10 h-10 bg-gradient-to-br ${theme.accent} rounded-xl flex items-center justify-center`}>
                   <Book className="w-5 h-5 text-white" />
                 </div>
@@ -3841,6 +3858,7 @@ useEffect(() => {
             )}
           </div>
         </div>
+        </>
       )}
 
       {/* Achievement Unlock Popup */}
@@ -3860,6 +3878,46 @@ useEffect(() => {
               className="mt-4 w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 rounded-lg transition-all"
             >
               Awesome! ✨
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Breathing Coach Overlay */}
+      {showBreathingCoach && (
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center z-[100000]">
+          <div className="text-center">
+            <div className="mb-8">
+              <Wind className="w-24 h-24 text-white mx-auto mb-4 opacity-80" />
+            </div>
+            <h2 className="text-5xl font-bold text-white mb-4">
+              {breathingPhase === 'inhale' ? 'Breathe In' : 
+               breathingPhase === 'hold1' ? 'Hold' : 
+               breathingPhase === 'exhale' ? 'Breathe Out' : 'Hold'}
+            </h2>
+            <p className="text-2xl text-white/80 mb-8">
+              Cycle {breathingCycle + 1} of {totalCycles}
+            </p>
+            <div className="w-64 h-64 mx-auto mb-8 relative">
+              <div 
+                className="absolute inset-0 rounded-full border-4 border-white/40 flex items-center justify-center"
+                style={{
+                  transform: breathingPhase === 'inhale' ? 'scale(1.2)' : breathingPhase === 'exhale' ? 'scale(0.8)' : 'scale(1)',
+                  transition: 'transform 4s ease-in-out'
+                }}
+              >
+                <div className="text-6xl font-bold text-white">{Math.ceil((100 - breathingProgress) / 25)}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setShowBreathingCoach(false);
+                setBreathingCycle(0);
+                setBreathingPhase('inhale');
+              }}
+              className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all"
+            >
+              Stop Exercise
             </button>
           </div>
         </div>
